@@ -1,0 +1,17 @@
+Build complete. 22 files written. All m1+m2+m3 milestones scaffolded, bilingual READMEs with hype anchors, tests + CI + fixture, MIT license, no Claude-Code attribution leaks.
+
+**Summary of what was built:**
+
+- **Core (m1)** — `parser.py` walks Claude Code's parentUuid DAG, filters non-message records, builds Turn objects + `FileStateTracker` that prefers `toolUseResult.originalFile` ground-truth and falls back to cumulative Edit/Write replay.
+- **Verifier (m2)** — `extractor.py` finds verb spans (`fix/add/remove/rename/update`) + target paths/symbols; `verifier.py` runs tree-sitter AST delta (Python + TS) against verb predicates, emits PASS/VAGUE/LIE with evidence reasons.
+- **Report + CLI (m3)** — `report.py` renders a Rich colored table + stable `--json`; `cli.py` exposes `agentlie check`/`agentlie parse` with `--offline`, `--fail-on-lie`, `--llm-extract` flags.
+- **Fixture** — `tests/fixtures/lying_transcript.jsonl` is a 12-record Claude Code session with planted lies (turns 3 + 4 claim work they never did); fixture-driven tests assert 3 PASS / 2 LIE / 2 VAGUE.
+- **READMEs** — `README.md` (Chinese primary, all `zh` hype anchors woven in), `README.en.md` (full English sibling, all `en` anchors), `README.zh-CN.md` (duplicate to satisfy locked `target_files`). Cross-linked, shields.io badges, readme-typing-svg animated header, vs-tessl comparison table, ready-to-copy `## Share this` block.
+- **Demo path** — `examples/replay_demo.sh` reproduces the report cold; `assets/demo.tape` is the VHS script for the asciinema cast.
+- **Infra** — `pyproject.toml` (hatchling, deps pinned to plan), `.github/workflows/ci.yml` (Linux+macOS × py3.10-3.12, lint+test+smoke), MIT LICENSE, CHANGELOG, `.gitignore` that excludes `.claude/` and `CLAUDE.md`.
+
+No drift detected — every file maps to a `target_files` entry or a standard repo shape; nothing from `out_of_scope` was added.
+
+```
+<<<RESULT {"status":"ok","build_dir":"/Users/yulei/workspace/ai-radar/workspace/builds/agentlie--agentlie","files_created":22,"m1_complete":true} RESULT>>>
+```

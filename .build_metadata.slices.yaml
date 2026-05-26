@@ -1,0 +1,33 @@
+plan: /Users/yulei/workspace/ai-radar/workspace/projects/scan-2026-05-26-0206/F-plan/winner-agentlie/mvp_plan.md
+total_target_files: 14
+stages:
+  scaffold:
+    count: 1
+    files:
+    - pyproject.toml
+  m1:
+    count: 0
+    files: []
+  m2_m3:
+    count: 1
+    files:
+    - src/agentlie/report.py
+  polish:
+    count: 12
+    files:
+    - README.md
+    - README.zh-CN.md
+    - src/agentlie/__init__.py
+    - src/agentlie/cli.py
+    - src/agentlie/parser.py
+    - src/agentlie/extractor.py
+    - src/agentlie/verifier.py
+    - src/agentlie/models.py
+    - tests/test_parser.py
+    - tests/test_verifier.py
+    - tests/fixtures/lying_transcript.jsonl
+    - examples/replay_demo.sh
+milestones_seen:
+- m1_parse_transcript
+- m2_verify_claims
+- m3_replay_report
