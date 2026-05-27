@@ -27,3 +27,6 @@ htmlcov/
 # Claude-Code / agent scaffolding — never commit
 .claude/
 CLAUDE.md
+.builder_prompt.md
+.build_metadata*
+.spawn.*
