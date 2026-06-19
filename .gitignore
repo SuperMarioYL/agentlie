@@ -30,3 +30,5 @@ CLAUDE.md
 .builder_prompt.md
 .build_metadata*
 .spawn.*
+.venv-verify/
+BUILD_SETUP_NEXT_STEPS.md

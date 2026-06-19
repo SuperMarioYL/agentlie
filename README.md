@@ -22,6 +22,7 @@
 ## 目录
 
 - [为什么需要这个工具](#为什么需要这个工具)
+- [架构](#架构)
 - [安装 + 30 秒上手](#安装--30-秒上手)
 - [Demo](#demo)
 - [vs 已有方案](#vs-已有方案)
@@ -50,6 +51,18 @@
 最后吐一张 `23 claims · 18 PASS · 2 VAGUE · 3 LIE` 的彩色表 —— 红的那几行就是翻车现场。
 
 > [@affaan-m](https://github.com/affaan-m) 维护的 `everything-claude-code` awesome-list 缺的那一块 *"Agent 到底做了没"* 的检查 —— 就是这里。
+
+## <img src="https://api.iconify.design/tabler/topology-star-3.svg?color=%230071E3" width="20" height="20" align="center" /> 架构
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/atlas-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./assets/atlas-light.svg">
+    <img src="./assets/atlas-light.svg" width="880" alt="Claude Code 的 .jsonl 会话被解析成按轮的 DAG 并带文件前后状态，extractor 抽出 fix/add/remove/rename/update claim，verifier 用 tree-sitter AST delta 对仗真实 edit，reporter 打出 PASS / VAGUE / LIE 判定表">
+  </picture>
+</p>
+
+一条会话从左到右流过四个进程内模块：`parser.py` 顺着 `parentUuid` 把 `.jsonl` 走成按轮的 DAG，并用 `toolUseResult.originalFile` 钉住每个文件的 before/after 真值；`extractor.py` 把每一轮自然语言里的 `fix/add/remove/rename/update` claim 抽成 `ClaimSpan`；`verifier.py` 用 tree-sitter 算 Python / TypeScript 的 AST delta，按动词判定必要变更是否真的发生。最后 `report.py` 把结果渲染成 `PASS / VAGUE / LIE` 彩色表 —— 全程离线、不需 API key、不上传任何日志。
 
 ## 安装 + 30 秒上手
 
@@ -85,9 +98,9 @@ agentlie check ~/.claude/projects/-Users-you-myrepo/63abd4ed-….jsonl
 
 </details>
 
-## Demo
+## <img src="https://api.iconify.design/tabler/photo.svg?color=%230071E3" width="20" height="20" align="center" /> Demo
 
-> 📼 Demo 录制中（见 [assets/README.md](./assets/README.md)）— 在那之前先跑 `bash examples/replay_demo.sh` 看本地效果。
+![agentlie demo](./assets/demo.gif)
 
 仓库自带一条 *人工种了谎话* 的 fixture：
 
@@ -190,7 +203,4 @@ agentlie — Claude Code 的 Agent 诚实性验证层。一行命令揪出 Agent
 
 ---
 
-<p align="center"><sub>
-  由 <a href="https://github.com/supermario-leo/ai-radar">ai-radar</a>
-  扫描 <code>scan-2026-05-26-0206</code> 生成的方案孵化。
-</sub></p>
+<p align="center"><sub>MIT © 2026 supermario_leo</sub></p>

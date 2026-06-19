@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" width="880" height="360"
+     font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+     role="img" aria-label="agentlie architecture: a Claude Code .jsonl session is parsed into a per-turn DAG with file before/after state, the extractor pulls fix/add/remove/rename/update claims, the verifier runs a tree-sitter AST delta against the real edits, and the reporter prints a PASS / VAGUE / LIE verdict table">
+  <defs>
+    <marker id="ah-d" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5A5A66"/></marker>
+  </defs>
+  <rect x="0" y="0" width="880" height="360" fill="#1D1D1F"/>
+
+  <!-- offline frame -->
+  <rect x="24" y="28" width="832" height="308" rx="18" fill="none" stroke="#8985FF" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <text x="44" y="50" font-size="13" font-weight="600" fill="#A7A4FF">In-process · offline · no API key · no upload</text>
+
+  <!-- connectors -->
+  <g stroke="#3A3A44" stroke-width="1.6" fill="none">
+    <line x1="208" y1="200" x2="252" y2="200" marker-end="url(#ah-d)"/>
+    <line x1="408" y1="200" x2="452" y2="200" marker-end="url(#ah-d)"/>
+    <line x1="608" y1="200" x2="652" y2="200" marker-end="url(#ah-d)"/>
+  </g>
+
+  <!-- Session input -->
+  <g>
+    <rect x="44" y="148" width="164" height="104" rx="15" fill="#4DA3FF" fill-opacity="0.16" stroke="#4DA3FF" stroke-width="1.5"/>
+    <text x="126" y="176" text-anchor="middle" font-size="14" font-weight="700" fill="#8EC4FF">Claude Code</text>
+    <text x="126" y="196" text-anchor="middle" font-size="13" font-weight="600" fill="#8EC4FF">session .jsonl</text>
+    <text x="126" y="222" text-anchor="middle" font-size="11" fill="#7FB2E8">turns · tool calls</text>
+    <text x="126" y="238" text-anchor="middle" font-size="11" fill="#7FB2E8">originalFile state</text>
+  </g>
+
+  <!-- parser -->
+  <g>
+    <rect x="252" y="148" width="156" height="104" rx="15" fill="#8985FF" fill-opacity="0.16" stroke="#8985FF" stroke-width="1.5"/>
+    <text x="330" y="176" text-anchor="middle" font-size="14" font-weight="700" fill="#B3B0FF">parser.py</text>
+    <text x="330" y="198" text-anchor="middle" font-size="11" fill="#A7A4FF">parentUuid DAG</text>
+    <text x="330" y="216" text-anchor="middle" font-size="11" fill="#A7A4FF">per-turn split</text>
+    <text x="330" y="234" text-anchor="middle" font-size="11" fill="#A7A4FF">FileStateTracker</text>
+  </g>
+
+  <!-- extractor -->
+  <g>
+    <rect x="452" y="148" width="156" height="104" rx="15" fill="#8985FF" fill-opacity="0.16" stroke="#8985FF" stroke-width="1.5"/>
+    <text x="530" y="176" text-anchor="middle" font-size="14" font-weight="700" fill="#B3B0FF">extractor.py</text>
+    <text x="530" y="198" text-anchor="middle" font-size="11" fill="#A7A4FF">fix·add·remove</text>
+    <text x="530" y="216" text-anchor="middle" font-size="11" fill="#A7A4FF">rename·update</text>
+    <text x="530" y="234" text-anchor="middle" font-size="11" fill="#A7A4FF">→ ClaimSpan</text>
+  </g>
+
+  <!-- verifier -->
+  <g>
+    <rect x="652" y="148" width="184" height="104" rx="15" fill="#2DC79A" fill-opacity="0.10" stroke="#2DC79A" stroke-width="1.6"/>
+    <text x="744" y="176" text-anchor="middle" font-size="14" font-weight="700" fill="#5BE0BC">verifier.py</text>
+    <text x="744" y="198" text-anchor="middle" font-size="11" fill="#4FD3AE">tree-sitter AST delta</text>
+    <text x="744" y="216" text-anchor="middle" font-size="11" fill="#4FD3AE">verb → required delta</text>
+    <text x="744" y="234" text-anchor="middle" font-size="11" fill="#4FD3AE">Python · TypeScript</text>
+  </g>
+
+  <!-- verdict / report row -->
+  <g stroke="#3A3A44" stroke-width="1.6" fill="none">
+    <line x1="744" y1="252" x2="744" y2="284" marker-end="url(#ah-d)"/>
+  </g>
+  <g>
+    <rect x="252" y="284" width="584" height="40" rx="12" fill="#2DC79A" fill-opacity="0.12" stroke="#2DC79A" stroke-width="1.4"/>
+    <text x="272" y="309" font-size="13" font-weight="700" fill="#5BE0BC">report.py</text>
+    <text x="352" y="309" font-size="12" fill="#C9C9D0">Rich table · --json</text>
+    <g font-size="12" font-weight="700">
+      <text x="560" y="309" fill="#5BE0BC">PASS</text>
+      <text x="640" y="309" fill="#F2C95B">VAGUE</text>
+      <text x="730" y="309" fill="#FF6B5E">LIE</text>
+    </g>
+  </g>
+</svg>

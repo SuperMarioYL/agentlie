@@ -1,12 +1,18 @@
 # Demo assets
 
-The 30-second asciinema cast for the README is rendered from `demo.tape`
-(a [VHS](https://github.com/charmbracelet/vhs) script). To regenerate:
+The README's animated demo (`assets/demo.gif`) is rendered from
+[`docs/demo.tape`](../docs/demo.tape) — a [VHS](https://github.com/charmbracelet/vhs)
+script. CI renders and commits it automatically on every tag via
+[`.github/workflows/demo.yml`](../.github/workflows/demo.yml).
+
+To regenerate locally (needs the `agentlie` CLI on PATH):
 
 ```bash
-vhs assets/demo.tape       # produces demo.gif
-asciinema rec -c "bash examples/replay_demo.sh" assets/demo.cast --overwrite
+pip install -e .
+vhs docs/demo.tape       # writes assets/demo.gif
 ```
 
-The README references `demo.cast`; until you record it, the README falls
-back to a still-image placeholder.
+Also in this folder:
+
+- `atlas-light.svg` / `atlas-dark.svg` — the architecture diagram used by the
+  README's `## Architecture` / `## 架构` section (dark/light via `<picture>`).

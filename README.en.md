@@ -23,6 +23,7 @@
 ## Table of contents
 
 - [Why this exists](#why-this-exists)
+- [Architecture](#architecture)
 - [Install + 30-second quickstart](#install--30-second-quickstart)
 - [Demo](#demo)
 - [vs the alternatives](#vs-the-alternatives)
@@ -60,6 +61,18 @@ the Agent lied.
 > [@affaan-m's `everything-claude-code`](https://github.com/affaan-m/everything-claude-code)
 > awesome-list — happy to PR.
 
+## <img src="https://api.iconify.design/tabler/topology-star-3.svg?color=%230071E3" width="20" height="20" align="center" /> Architecture
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/atlas-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./assets/atlas-light.svg">
+    <img src="./assets/atlas-light.svg" width="880" alt="A Claude Code .jsonl session is parsed into a per-turn DAG with file before/after state, the extractor pulls fix/add/remove/rename/update claims, the verifier runs a tree-sitter AST delta against the real edits, and the reporter prints a PASS / VAGUE / LIE verdict table">
+  </picture>
+</p>
+
+One session flows left to right through four in-process modules. `parser.py` walks the `.jsonl` into a per-turn DAG along `parentUuid` and pins each file's before/after ground truth from `toolUseResult.originalFile`. `extractor.py` lifts every `fix/add/remove/rename/update` claim out of the assistant text into a `ClaimSpan`, then `verifier.py` computes a tree-sitter AST delta for Python / TypeScript and applies the verb predicate to decide whether the claimed change actually happened. Finally `report.py` renders the `PASS / VAGUE / LIE` table — entirely offline, no API key, nothing uploaded.
+
 ## Install + 30-second quickstart
 
 ```bash
@@ -94,10 +107,9 @@ Under 10s on a 200-turn session, local box.
 
 </details>
 
-## Demo
+## <img src="https://api.iconify.design/tabler/photo.svg?color=%230071E3" width="20" height="20" align="center" /> Demo
 
-> 📼 Asciinema cast coming soon (see [assets/README.md](./assets/README.md)) — in the
-> meantime, `bash examples/replay_demo.sh` reproduces the screenshot locally.
+![agentlie demo](./assets/demo.gif)
 
 The repo ships with a *planted-lies* fixture so the demo runs cold:
 
@@ -202,7 +214,4 @@ Offline. MIT. https://github.com/supermario-leo/agentlie
 
 ---
 
-<p align="center"><sub>
-  Incubated from scan <code>scan-2026-05-26-0206</code> via
-  <a href="https://github.com/supermario-leo/ai-radar">ai-radar</a>.
-</sub></p>
+<p align="center"><sub>MIT © 2026 supermario_leo</sub></p>
