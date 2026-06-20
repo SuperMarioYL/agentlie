@@ -216,4 +216,4 @@ Offline. MIT. https://github.com/supermario-leo/agentlie
 
 ---
 
-<p align="center"><sub>MIT © 2026 supermario_leo</sub></p>
+<p align="center"><sub>MIT © 2026 SuperMarioYL</sub></p>

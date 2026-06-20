@@ -205,4 +205,4 @@ agentlie — Claude Code 的 Agent 诚实性验证层。一行命令揪出 Agent
 
 ---
 
-<p align="center"><sub>MIT © 2026 supermario_leo</sub></p>
+<p align="center"><sub>MIT © 2026 SuperMarioYL</sub></p>
