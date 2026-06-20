@@ -10,7 +10,7 @@
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue.svg" />
   <img alt="ci" src="https://img.shields.io/badge/CI-passing-brightgreen" />
-  <img alt="status" src="https://img.shields.io/badge/status-v0.1-orange" />
+  <img alt="status" src="https://img.shields.io/badge/status-v0.2-brightgreen" />
   <img alt="Claude Code" src="https://img.shields.io/badge/for-Claude%20Code-7c5cff" />
   <img alt="Coding Agent" src="https://img.shields.io/badge/Coding%20Agent-honesty%20layer-ef4444" />
   <img alt="Agent" src="https://img.shields.io/badge/Agent-verified-22d3ee" />
@@ -30,7 +30,7 @@
 - [How it works](#how-it-works)
 - [Configuration](#configuration)
 - [Roadmap](#roadmap)
-- [What is out of scope for v0.1](#what-is-out-of-scope-for-v01)
+- [What is out of scope](#what-is-out-of-scope)
 - [Contributing + License](#contributing--license)
 - [Share this](#share-this)
 
@@ -71,7 +71,7 @@ the Agent lied.
   </picture>
 </p>
 
-One session flows left to right through four in-process modules. `parser.py` walks the `.jsonl` into a per-turn DAG along `parentUuid` and pins each file's before/after ground truth from `toolUseResult.originalFile`. `extractor.py` lifts every `fix/add/remove/rename/update` claim out of the assistant text into a `ClaimSpan`, then `verifier.py` computes a tree-sitter AST delta for Python / TypeScript and applies the verb predicate to decide whether the claimed change actually happened. Finally `report.py` renders the `PASS / VAGUE / LIE` table — entirely offline, no API key, nothing uploaded.
+One session flows left to right through four in-process modules. `parser.py` walks the `.jsonl` into a per-turn DAG along `parentUuid` and pins each file's before/after ground truth from `toolUseResult.originalFile`. `extractor.py` lifts every `fix/add/remove/rename/update` claim out of the assistant text into a `ClaimSpan`, then `verifier.py` computes a tree-sitter AST delta for Python / TypeScript / Go / Rust and applies the verb predicate to decide whether the claimed change actually happened. Finally `report.py` renders the `PASS / VAGUE / LIE` table — entirely offline, no API key, nothing uploaded.
 
 ## Install + 30-second quickstart
 
@@ -128,7 +128,7 @@ You should see at least two red `LIE` rows in under 5 seconds.
 | Per-turn claim ↔ per-turn edit      | ✗ (your eyes)  | ✗ (metric aggregation)         | partial          | **✓**        |
 | Drops into any Coding Agent harness | ✓              | ✗                              | partial (wraps frameworks) | **✓** |
 | Offline, never uploads transcripts  | ✓              | ✗                              | ✗                | **✓**        |
-| Codex GPT-5.5 transcript support    | ✓              | ✓                              | ✓                | v0.2 roadmap |
+| Codex transcript support            | ✓              | ✓                              | ✓                | **✓**        |
 | Auto-audit (no human reading diffs) | ✗              | partial                        | ✓                | **✓**        |
 
 tessl is the closest comparable — but it's **aggregated post-hoc evals
@@ -151,7 +151,7 @@ is part of the inspiration here.
         │
         ▼
 [verifier.py]  pulls before/after for the claimed path, runs tree-sitter
-               (Python + TypeScript), computes AST delta, applies the
+               (Python/TS/Go/Rust), computes AST delta, applies the
                verb-predicate:
                  add    → expect new if/import/function/class node
                  remove → expect those node counts to drop
@@ -173,7 +173,8 @@ No config file. Everything via CLI flag:
 | flag              | default  | meaning                                                           |
 | ----------------- | -------- | ----------------------------------------------------------------- |
 | `--offline`       | ✓        | Rule-based extractor only, never calls an external LLM            |
-| `--llm-extract`   | off      | (v0.2) routes missed claims to a Claude-Haiku fallback             |
+| `--llm-extract`   | off      | Routes missed claims to a Claude-Haiku fallback (needs `ANTHROPIC_API_KEY`; falls back to rules without one) |
+| `--format`        | auto     | Session format: `auto` sniffs / `claude-code` / `codex`           |
 | `--json`          | off      | Stable machine-readable verdict dump for CI                       |
 | `--fail-on-lie`   | off      | Exit 1 if any LIE verdict is emitted — drop into CI               |
 | `--no-evidence`   | off      | Hide the evidence column for cleaner screenshots                  |
@@ -183,16 +184,17 @@ No config file. Everything via CLI flag:
 - [x] **m1** parse — JSONL → Turn DAG + FileStateTracker (`toolUseResult.originalFile` priority)
 - [x] **m2** verify — verb-predicate AST delta, three-tier PASS / VAGUE / LIE verdict
 - [x] **m3** report — Rich colored table + `--json` stable schema + one-command demo
-- [ ] **v0.2** Codex / OpenAI Agents SDK transcript format
-- [ ] **v0.2** Wire `--llm-extract` to Claude Haiku for actual fallback extraction
+- [x] **v0.2** Codex transcript format (`--format codex`, auto-sniffed by default)
+- [x] **v0.2** `--llm-extract` wired to Claude Haiku, with graceful offline fallback
+- [x] **v0.2** Go / Rust AST delta coverage
 - [ ] **v0.3** Cursor / Aider / Aider-roo transcript support
 - [ ] **v0.3** "Lies in the wild" monthly anonymized dataset
 - [ ] **v0.4** Self-host "team transparency report" mode
 
-## What is out of scope for v0.1
+## What is out of scope
 
-- Claude Code JSONL only — Codex / Cursor in v0.2
-- AST verdicts for Python + TypeScript only; other languages fall back to string-diff and **never** emit LIE on AST grounds alone
+- Claude Code JSONL and Codex logs supported — Cursor / Aider in v0.3
+- AST verdicts for Python / TypeScript / Go / Rust; other languages fall back to string-diff and **never** emit LIE on AST grounds alone
 - No replay, no rollback, no auto-fix — read-only report
 - No in-flight interception — post-session replay only
 - No web UI, no IDE plugin, no hosted SaaS

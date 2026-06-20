@@ -16,10 +16,18 @@ verdict as VAGUE downstream.
 
 from __future__ import annotations
 
+import json
+import os
 import re
 from typing import Iterable, Optional
 
 from agentlie.models import ClaimEditPair, ClaimSpan, Turn, Verdict
+
+# Default Haiku model for the optional LLM extractor (m4). Overridable via env
+# so the extractor keeps working when Anthropic renames the latest Haiku snapshot.
+LLM_MODEL = os.environ.get("AGENTLIE_LLM_MODEL", "claude-3-5-haiku-latest")
+
+_VALID_VERBS = {"fix", "add", "remove", "rename", "update"}
 
 VERB_SYNONYMS: dict[str, str] = {
     "fix": "fix",
@@ -148,3 +156,141 @@ def extract_claims(turns: list[Turn]) -> list[ClaimEditPair]:
                 )
             )
     return pairs
+
+
+# --------------------------------------------------------------------------- #
+# m4 — optional Claude-Haiku-backed extractor.
+#
+# The rule-based pass above is deterministic and offline but misses claims whose
+# phrasing doesn't hit the regex set ("I went ahead and got rid of the dead
+# import", "wired the handler so the 500 stops"). When --llm-extract is set AND
+# an API key is present, we ask Haiku to enumerate change-claims as structured
+# JSON, then merge any that the rule-based pass didn't already cover. Any
+# failure (no key, no SDK, network/parse error) degrades silently to the
+# rule-based result — the flag is additive, never load-bearing.
+# --------------------------------------------------------------------------- #
+
+_LLM_SYSTEM = (
+    "You extract code-change claims from a coding agent's assistant message. "
+    "A claim is a span where the agent asserts it changed code. For each claim, "
+    "return a normalised verb (one of: fix, add, remove, rename, update), the "
+    "verbatim claim text, and an optional target file path the agent named. "
+    "Only include genuine change assertions — ignore questions, plans, and "
+    "descriptions of what code already does. Respond with a single JSON object "
+    '{"claims": [{"verb": "...", "text": "...", "target_path": "... or null"}]}.'
+)
+
+
+def _anthropic_client():
+    """Return an Anthropic client, or None if the SDK or key is unavailable."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return None
+    try:
+        import anthropic  # type: ignore
+    except Exception:
+        return None
+    try:
+        return anthropic.Anthropic()
+    except Exception:
+        return None
+
+
+def _llm_extract_turn(client, turn: Turn) -> list[ClaimSpan]:
+    """Ask Haiku for the change-claims in one turn's assistant text."""
+    text = turn.assistant_text or ""
+    if not text.strip():
+        return []
+    try:
+        resp = client.messages.create(
+            model=LLM_MODEL,
+            max_tokens=1024,
+            system=_LLM_SYSTEM,
+            messages=[{"role": "user", "content": text}],
+        )
+        raw = "".join(
+            block.text for block in resp.content if getattr(block, "type", None) == "text"
+        )
+    except Exception:
+        return []
+    # Tolerate fenced or prose-wrapped JSON.
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if not match:
+        return []
+    try:
+        data = json.loads(match.group(0))
+    except Exception:
+        return []
+    candidate_paths = [e.path for e in turn.tool_calls if e.path]
+    spans: list[ClaimSpan] = []
+    for item in data.get("claims", []):
+        if not isinstance(item, dict):
+            continue
+        verb = str(item.get("verb", "")).lower().strip()
+        verb = VERB_SYNONYMS.get(verb, verb)
+        if verb not in _VALID_VERBS:
+            continue
+        ctext = str(item.get("text", "")).strip()
+        if not ctext:
+            continue
+        target_path = item.get("target_path") or None
+        if target_path and candidate_paths:
+            # Prefer an actually-edited path when the model names a bare basename.
+            target_path = _scan_target_path(str(target_path), candidate_paths) or str(target_path)
+        spans.append(
+            ClaimSpan(
+                text=ctext,
+                verb=verb,
+                target_path=str(target_path) if target_path else None,
+                target_symbol=_scan_target_symbol(ctext) if not target_path else None,
+            )
+        )
+    return spans
+
+
+def extract_claims_llm(turns: list[Turn]) -> tuple[list[ClaimEditPair], bool]:
+    """Rule-based extraction augmented by a Haiku pass.
+
+    Returns (pairs, used_llm). ``used_llm`` is False when the LLM path was
+    unavailable (no key / no SDK), so the caller can warn that it fell back to
+    rule-based extraction. New LLM-only claims are appended to the rule-based
+    pairs; duplicates (same verb + overlapping text within a turn) are dropped.
+    """
+    pairs = extract_claims(turns)
+    client = _anthropic_client()
+    if client is None:
+        return pairs, False
+
+    seen: set[tuple[int, str, str]] = {
+        (p.turn_id, p.claim.verb, _norm(p.claim.text)) for p in pairs
+    }
+    for turn in turns:
+        for span in _llm_extract_turn(client, turn):
+            key = (turn.turn_id, span.verb, _norm(span.text))
+            if key in seen or _overlaps(turn.turn_id, span, seen):
+                continue
+            seen.add(key)
+            pairs.append(
+                ClaimEditPair(
+                    turn_id=turn.turn_id,
+                    claim=span,
+                    edits=list(turn.tool_calls),
+                    verdict=Verdict.VAGUE,
+                )
+            )
+    pairs.sort(key=lambda p: p.turn_id)
+    return pairs, True
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"\s+", " ", text.lower()).strip()
+
+
+def _overlaps(turn_id: int, span: ClaimSpan, seen: set[tuple[int, str, str]]) -> bool:
+    """True if a rule-based claim in the same turn substantially covers this span."""
+    norm = _norm(span.text)
+    for tid, verb, text in seen:
+        if tid != turn_id or verb != span.verb:
+            continue
+        if norm in text or text in norm:
+            return True
+    return False

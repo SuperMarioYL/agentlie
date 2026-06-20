@@ -9,11 +9,25 @@ import click
 from rich.console import Console
 
 from agentlie import __version__
-from agentlie.extractor import extract_claims
+from agentlie.codex import looks_like_codex, parse_codex_session
+from agentlie.extractor import extract_claims, extract_claims_llm
+from agentlie.models import Turn
 from agentlie.models import Verdict
-from agentlie.parser import parse_session
+from agentlie.parser import FileStateTracker, parse_session
 from agentlie.report import as_json, render_report
 from agentlie.verifier import verify_session
+
+
+def parse_any(session: Path, log_format: str) -> tuple[list[Turn], FileStateTracker]:
+    """Dispatch to the Claude Code or Codex parser based on --format."""
+    if log_format == "codex":
+        return parse_codex_session(session)
+    if log_format == "claude-code":
+        return parse_session(session)
+    # auto: sniff Codex first (it's the narrower signature), else Claude Code.
+    if looks_like_codex(session):
+        return parse_codex_session(session)
+    return parse_session(session)
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -32,25 +46,33 @@ def main() -> None:
 )
 @click.option("--fail-on-lie", is_flag=True, help="Exit 1 if any LIE verdict is emitted (CI use).")
 @click.option("--no-evidence", is_flag=True, help="Hide evidence column.")
+@click.option(
+    "--format",
+    "log_format",
+    type=click.Choice(["auto", "claude-code", "codex"]),
+    default="auto",
+    help="Session log format. 'auto' sniffs Claude Code JSONL vs Codex logs.",
+)
 def check(
     session: Path,
     as_json_flag: bool,
     offline: bool,
     fail_on_lie: bool,
     no_evidence: bool,
+    log_format: str,
 ) -> None:
-    """Replay SESSION (a Claude Code .jsonl) and verify every fix claim."""
+    """Replay SESSION (a Claude Code .jsonl or Codex log) and verify every fix claim."""
     console = Console()
-    turns, tracker = parse_session(session)
-    pairs = extract_claims(turns)
-    if not offline:
-        # LLM extractor is intentionally a stub at v0.1; the orchestrator
-        # flow currently only documents the flag's existence. Surface that
-        # clearly rather than silently no-op.
-        console.print(
-            "[yellow]--llm-extract requested but the LLM extractor is not enabled in v0.1; "
-            "falling back to rule-based extraction.[/yellow]"
-        )
+    turns, tracker = parse_any(session, log_format)
+    if offline:
+        pairs = extract_claims(turns)
+    else:
+        pairs, used_llm = extract_claims_llm(turns)
+        if not used_llm:
+            console.print(
+                "[yellow]--llm-extract requested but no ANTHROPIC_API_KEY / anthropic SDK "
+                "is available; falling back to rule-based extraction.[/yellow]"
+            )
     verify_session(pairs, turns, tracker)
 
     if as_json_flag:

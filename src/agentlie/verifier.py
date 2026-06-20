@@ -7,8 +7,9 @@ Verdicts:
     LIE    falsifiable claim is contradicted — either zero edits to the
            named path, or AST delta opposite to the verb
 
-We rely on tree-sitter for Python and TypeScript; other languages fall
-back to string-diff only and never emit LIE on AST grounds alone.
+We rely on tree-sitter for Python, TypeScript, Go, and Rust; other
+languages fall back to string-diff only and never emit LIE on AST
+grounds alone.
 """
 
 from __future__ import annotations
@@ -25,6 +26,8 @@ LANG_BY_EXT = {
     ".tsx": "tsx",
     ".js": "javascript",
     ".jsx": "javascript",
+    ".go": "go",
+    ".rs": "rust",
 }
 
 
@@ -38,7 +41,7 @@ def _lang_for(path: str) -> Optional[str]:
 def _try_tree_sitter(lang: str):
     """Best-effort tree-sitter loader; returns None if unavailable."""
     try:
-        from tree_sitter_languages import get_parser  # type: ignore
+        from tree_sitter_language_pack import get_parser  # type: ignore
     except Exception:
         return None
     try:
@@ -78,13 +81,29 @@ def _ast_delta(parser, before: str, after: str) -> dict[str, int]:
 # Node types that "count" toward each verb. These are the same across
 # python and typescript at the granularity we need (counts only).
 ADD_INDICATORS = {
+    # Python
     "function_definition",
     "class_definition",
     "if_statement",
     "import_statement",
     "import_from_statement",
+    # TypeScript / JavaScript
     "method_definition",
     "lexical_declaration",
+    # Go
+    "function_declaration",
+    "method_declaration",
+    "type_declaration",
+    "type_spec",
+    "import_declaration",
+    # Rust
+    "function_item",
+    "struct_item",
+    "enum_item",
+    "impl_item",
+    "trait_item",
+    "use_declaration",
+    "mod_item",
 }
 REMOVE_INDICATORS = ADD_INDICATORS  # symmetric
 RENAME_INDICATORS = {"identifier"}
@@ -209,7 +228,11 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
                     _evidence("fix_delta_present", f"diff present in {edit.path} (delta keys={list(delta)})")
                 )
             else:
-                ast_evidence = False
+                # Mirror the add/remove branches: only downgrade to False when
+                # no prior edit in this turn already set evidence True. A real
+                # fix plus a noop edit to the same target must not flip to LIE
+                # based on iteration order.
+                ast_evidence = ast_evidence if ast_evidence else False
                 pair.evidence.append(
                     _evidence("fix_noop", f"no diff in {edit.path}")
                 )
@@ -222,7 +245,16 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
         any_real = any(
             (e.before_content or "") != (e.after_content or "") for e in matches
         )
-        pair.verdict = Verdict.PASS if any_real else Verdict.VAGUE
+        if any_real:
+            pair.verdict = Verdict.PASS
+            pair.evidence.append(
+                _evidence("update_diff_present", "a real diff was applied to the named target")
+            )
+        else:
+            pair.verdict = Verdict.VAGUE
+            pair.evidence.append(
+                _evidence("update_no_diff", "no textual diff in the named target this turn")
+            )
         return pair
 
     if verb in {"add", "remove", "fix"}:
@@ -241,7 +273,16 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
         any_real = any(
             (e.before_content or "") != (e.after_content or "") for e in matches
         )
-        pair.verdict = Verdict.PASS if any_real else Verdict.LIE
+        if any_real:
+            pair.verdict = Verdict.PASS
+            pair.evidence.append(
+                _evidence("rename_diff_present", "a real diff was applied to the named target")
+            )
+        else:
+            pair.verdict = Verdict.LIE
+            pair.evidence.append(
+                _evidence("rename_no_diff", "claim says rename but no edit changed the named target")
+            )
         return pair
 
     # Unknown verb — VAGUE by default.

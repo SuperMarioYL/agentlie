@@ -10,7 +10,7 @@
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue.svg" />
   <img alt="ci" src="https://img.shields.io/badge/CI-passing-brightgreen" />
-  <img alt="status" src="https://img.shields.io/badge/status-v0.1-orange" />
+  <img alt="status" src="https://img.shields.io/badge/status-v0.2-brightgreen" />
   <img alt="Claude Code" src="https://img.shields.io/badge/for-Claude%20Code-7c5cff" />
   <img alt="Agent" src="https://img.shields.io/badge/Agent-honesty%20layer-ef4444" />
 </p>
@@ -29,7 +29,7 @@
 - [它是怎么工作的](#它是怎么工作的)
 - [配置项](#配置项)
 - [路线图](#路线图)
-- [限制 / 不在 v0.1 范围](#限制--不在-v01-范围)
+- [限制 / 不在范围](#限制--不在范围)
 - [贡献 + 许可](#贡献--许可)
 - [Share this](#share-this)
 
@@ -62,7 +62,7 @@
   </picture>
 </p>
 
-一条会话从左到右流过四个进程内模块：`parser.py` 顺着 `parentUuid` 把 `.jsonl` 走成按轮的 DAG，并用 `toolUseResult.originalFile` 钉住每个文件的 before/after 真值；`extractor.py` 把每一轮自然语言里的 `fix/add/remove/rename/update` claim 抽成 `ClaimSpan`；`verifier.py` 用 tree-sitter 算 Python / TypeScript 的 AST delta，按动词判定必要变更是否真的发生。最后 `report.py` 把结果渲染成 `PASS / VAGUE / LIE` 彩色表 —— 全程离线、不需 API key、不上传任何日志。
+一条会话从左到右流过四个进程内模块：`parser.py` 顺着 `parentUuid` 把 `.jsonl` 走成按轮的 DAG，并用 `toolUseResult.originalFile` 钉住每个文件的 before/after 真值；`extractor.py` 把每一轮自然语言里的 `fix/add/remove/rename/update` claim 抽成 `ClaimSpan`；`verifier.py` 用 tree-sitter 算 Python / TypeScript / Go / Rust 的 AST delta，按动词判定必要变更是否真的发生。最后 `report.py` 把结果渲染成 `PASS / VAGUE / LIE` 彩色表 —— 全程离线、不需 API key、不上传任何日志。
 
 ## 安装 + 30 秒上手
 
@@ -119,7 +119,7 @@ bash examples/replay_demo.sh
 | 粒度：每轮 claim ↔ 每轮 edit | ✗（你眼睛对） | ✗（指标聚合）           | partial          | **✓**        |
 | 跨 agent 框架（即插即用）     | ✓              | ✗                       | partial（绑框架）| **✓**        |
 | 离线 / 不上传日志             | ✓              | ✗                       | ✗                | **✓**        |
-| Codex GPT-5.5 兼容             | ✓              | ✓                       | ✓                | 在 v0.2 路线 |
+| Codex 日志兼容                 | ✓              | ✓                       | ✓                | **✓**        |
 | 自动审计（无须人读 diff）     | ✗              | partial                 | ✓                | **✓**        |
 
 tessl 是最近的可比对象 —— 但它是**多次运行后的聚合 eval**，agentlie 是**单次会话里每一轮的对仗**。两件事情，
@@ -140,7 +140,7 @@ tessl 是最近的可比对象 —— 但它是**多次运行后的聚合 eval**
         │
         ▼
 [verifier.py]  对每个 claim 取出对应 path 的 before/after，
-               跑 tree-sitter (Python + TypeScript) 算 AST delta
+               跑 tree-sitter (Python/TS/Go/Rust) 算 AST delta
                动词 → 必要 delta：
                  add    需要新增 if/import/function/class 之一
                  remove 需要相应节点减少
@@ -162,7 +162,8 @@ tessl 是最近的可比对象 —— 但它是**多次运行后的聚合 eval**
 | flag              | 默认       | 含义                                                          |
 | ----------------- | ---------- | ------------------------------------------------------------- |
 | `--offline`       | ✓          | 只用规则抽取，不调外部 LLM                                    |
-| `--llm-extract`   | off        | （v0.2 启用）用 Claude Haiku 抽取漏过规则的 claim             |
+| `--llm-extract`   | off        | 用 Claude Haiku 抽取规则漏过的 claim（需 `ANTHROPIC_API_KEY`，无 key 时自动回退到规则） |
+| `--format`        | auto       | 会话格式：`auto` 自动嗅探 / `claude-code` / `codex`           |
 | `--json`          | off        | 输出机器可读的 verdict JSON，CI 友好                          |
 | `--fail-on-lie`   | off        | 出现任一 LIE 时 exit 1，可挂 CI                               |
 | `--no-evidence`   | off        | 隐藏 evidence 列，截图给老板看时更干净                        |
@@ -172,16 +173,17 @@ tessl 是最近的可比对象 —— 但它是**多次运行后的聚合 eval**
 - [x] **m1** parse — JSONL → Turn DAG + FileStateTracker（`toolUseResult.originalFile` 优先）
 - [x] **m2** verify — verb-predicate AST delta，PASS / VAGUE / LIE 三档
 - [x] **m3** report — Rich 彩色表 + `--json` 稳定 schema + 单命令 demo
-- [ ] **v0.2** Codex / OpenAI Agents SDK 会话格式支持
-- [ ] **v0.2** `--llm-extract` 真正接通 Claude Haiku
+- [x] **v0.2** Codex 会话格式支持（`--format codex`，默认自动嗅探）
+- [x] **v0.2** `--llm-extract` 真正接通 Claude Haiku（无 key 时优雅回退）
+- [x] **v0.2** Go / Rust 的 AST delta 覆盖
 - [ ] **v0.3** Cursor / Aider / Aider-roo
 - [ ] **v0.3** "lies in the wild" 月度匿名数据集
 - [ ] **v0.4** 团队自托管 "transparency report" 模式
 
-## 限制 / 不在 v0.1 范围
+## 限制 / 不在范围
 
-- 只支持 Claude Code 的 JSONL 格式 —— Codex / Cursor 在 v0.2
-- 只支持 Python + TypeScript 的 AST delta，其它语言走 string-diff，**永远不会**仅凭它判 LIE
+- 支持 Claude Code 的 JSONL 与 Codex 日志格式 —— Cursor / Aider 在 v0.3
+- AST delta 覆盖 Python / TypeScript / Go / Rust，其它语言走 string-diff，**永远不会**仅凭它判 LIE
 - 不会重放 / 不会回滚 / 不会自动修复 —— 只读报告
 - 不拦截在线 Agent —— 是 post-session 回放
 - 没有 web UI、没有 IDE 插件、没有 SaaS

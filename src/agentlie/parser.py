@@ -119,15 +119,20 @@ def _walk_dag(records: list[dict]) -> list[dict]:
     ordered: list[dict] = []
     seen: set[str] = set()
 
-    def visit(uuid: Optional[str]) -> None:
-        for child_uuid in children.get(uuid, []):
-            if child_uuid in seen or child_uuid not in by_uuid:
-                continue
-            seen.add(child_uuid)
-            ordered.append(by_uuid[child_uuid])
-            visit(child_uuid)
-
-    visit(None)
+    # Iterative pre-order DFS. A normal long Claude Code session is a near-linear
+    # parentUuid chain (depth ≈ record count), so a recursive walk would blow
+    # Python's ~1000-frame recursion limit on 1500+ record sessions — exactly the
+    # long-session target use case. The explicit stack keeps depth unbounded.
+    # Push each node's children in reverse so they pop in their listed order,
+    # preserving the original pre-order traversal.
+    stack: list[Optional[str]] = list(reversed(children.get(None, [])))
+    while stack:
+        child_uuid = stack.pop()
+        if not child_uuid or child_uuid in seen or child_uuid not in by_uuid:
+            continue
+        seen.add(child_uuid)
+        ordered.append(by_uuid[child_uuid])
+        stack.extend(reversed(children.get(child_uuid, [])))
     # Append orphans (records whose parent isn't in the file) in input order.
     for r in records:
         uuid = r.get("uuid", "")
