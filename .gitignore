@@ -32,3 +32,7 @@ CLAUDE.md
 .spawn.*
 .venv-verify/
 BUILD_SETUP_NEXT_STEPS.md
+PUBLISH_BLOCKED.md
+.build_metadata*
+.builder_*
+.spawn.*
