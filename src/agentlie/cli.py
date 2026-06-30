@@ -86,10 +86,19 @@ def check(
 
 @main.command()
 @click.argument("session", type=click.Path(exists=True, dir_okay=False, path_type=Path))
-def parse(session: Path) -> None:
+@click.option(
+    "--format",
+    "log_format",
+    type=click.Choice(["auto", "claude-code", "codex"]),
+    default="auto",
+    help="Session log format. 'auto' sniffs Claude Code JSONL vs Codex logs.",
+)
+def parse(session: Path, log_format: str) -> None:
     """Inspect parsed turns without running the verifier."""
     console = Console()
-    turns, _ = parse_session(session)
+    # Route through parse_any (same as `check`) so Codex logs are honored instead
+    # of silently yielding "0 turns parsed" — `parse_session` is Claude-Code-only.
+    turns, _ = parse_any(session, log_format)
     for turn in turns:
         tools = ", ".join(f"{e.tool}(path={e.path})" for e in turn.tool_calls) or "—"
         text_preview = (turn.assistant_text[:140] + "…") if len(turn.assistant_text) > 140 else turn.assistant_text

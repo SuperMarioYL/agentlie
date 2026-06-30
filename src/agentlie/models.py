@@ -37,6 +37,7 @@ class ActualEdit(BaseModel):
     path: str
     old_string: Optional[str] = None
     new_string: Optional[str] = None
+    replace_all: bool = False
     content: Optional[str] = None
     before_content: Optional[str] = None
     after_content: Optional[str] = None

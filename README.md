@@ -10,7 +10,7 @@
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue.svg" />
   <img alt="ci" src="https://img.shields.io/badge/CI-passing-brightgreen" />
-  <img alt="status" src="https://img.shields.io/badge/status-v0.2-brightgreen" />
+  <img alt="status" src="https://img.shields.io/badge/status-v0.3-brightgreen" />
   <img alt="Claude Code" src="https://img.shields.io/badge/for-Claude%20Code-7c5cff" />
   <img alt="Agent" src="https://img.shields.io/badge/Agent-honesty%20layer-ef4444" />
 </p>
@@ -176,6 +176,7 @@ tessl 是最近的可比对象 —— 但它是**多次运行后的聚合 eval**
 - [x] **v0.2** Codex 会话格式支持（`--format codex`，默认自动嗅探）
 - [x] **v0.2** `--llm-extract` 真正接通 Claude Haiku（无 key 时优雅回退）
 - [x] **v0.2** Go / Rust 的 AST delta 覆盖
+- [x] **v0.3** 判定准确性修复：非结构性 add/remove 不再误判 LIE、symbol 预存在不再误判 PASS、basename 回退按路径边界匹配、`replace_all` 全量回放、`parse` 支持 Codex 日志
 - [ ] **v0.3** Cursor / Aider / Aider-roo
 - [ ] **v0.3** "lies in the wild" 月度匿名数据集
 - [ ] **v0.4** 团队自托管 "transparency report" 模式

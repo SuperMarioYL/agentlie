@@ -69,7 +69,15 @@ class FileStateTracker:
             old = edit.old_string or ""
             new = edit.new_string or ""
             if old and old in current:
-                after = current.replace(old, new, 1)
+                # Honor the Edit tool's ``replace_all`` flag: when set, the real
+                # tool replaces every occurrence, so replaying only the first would
+                # mis-reconstruct the after-state (e.g. 3 ``foo()`` → 1 ``bar()`` +
+                # 2 ``foo()`` instead of 3 ``bar()``) and feed wrong ground truth to
+                # the verifier. Default stays first-occurrence-only.
+                if edit.replace_all:
+                    after = current.replace(old, new)
+                else:
+                    after = current.replace(old, new, 1)
             elif old == "":
                 after = current + new
             else:
@@ -175,6 +183,7 @@ def _tool_use_edits(content_blocks: list[dict]) -> list[ActualEdit]:
                     path=path or "",
                     old_string=inp.get("old_string"),
                     new_string=inp.get("new_string"),
+                    replace_all=bool(inp.get("replace_all", False)),
                 )
             )
         elif name == "Write":

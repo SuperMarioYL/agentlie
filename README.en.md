@@ -10,7 +10,7 @@
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue.svg" />
   <img alt="ci" src="https://img.shields.io/badge/CI-passing-brightgreen" />
-  <img alt="status" src="https://img.shields.io/badge/status-v0.2-brightgreen" />
+  <img alt="status" src="https://img.shields.io/badge/status-v0.3-brightgreen" />
   <img alt="Claude Code" src="https://img.shields.io/badge/for-Claude%20Code-7c5cff" />
   <img alt="Coding Agent" src="https://img.shields.io/badge/Coding%20Agent-honesty%20layer-ef4444" />
   <img alt="Agent" src="https://img.shields.io/badge/Agent-verified-22d3ee" />
@@ -187,6 +187,7 @@ No config file. Everything via CLI flag:
 - [x] **v0.2** Codex transcript format (`--format codex`, auto-sniffed by default)
 - [x] **v0.2** `--llm-extract` wired to Claude Haiku, with graceful offline fallback
 - [x] **v0.2** Go / Rust AST delta coverage
+- [x] **v0.3** Verdict-accuracy fixes: non-structural add/remove no longer false-LIE, a pre-existing symbol no longer false-PASSes an `add`, the basename fallback matches at path boundaries only, `replace_all` is replayed in full, and `parse` honors Codex logs
 - [ ] **v0.3** Cursor / Aider / Aider-roo transcript support
 - [ ] **v0.3** "Lies in the wild" monthly anonymized dataset
 - [ ] **v0.4** Self-host "team transparency report" mode
