@@ -5,6 +5,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-03
+
+A correctness-focused release. The strongest verified honesty-engine defect on
+the Codex format is fixed, a sibling target-resolution bug is closed, and AST
+verdicts now cover Java — so verdicts are trustworthy on more transcripts and
+more languages.
+
+### Fixed
+- **Codex `apply_patch` no longer discards the before-state.** Every hunk (Add,
+  Update, Delete) used to be modelled as a bare `Write` of only the after-fragment
+  (context + `+` lines), leaving `before_content` `None`. That made a genuine
+  Codex **removal** claim un-confirmable (it fell to `VAGUE` because
+  `symbol_removed` needs the symbol present-before/absent-after), and it defeated
+  the v0.3.0 pre-existing-symbol guard (which needs to see the symbol in the
+  before). An Update hunk now reconstructs **both** sides — before = context + `-`
+  lines, after = context + `+` lines — so removal claims can `PASS` and an "added
+  X" claim about a symbol the patch's context shows already existed is caught.
+- **Extractor target-path resolution is now path-segment-safe.** A basename was
+  matched with a bare substring test, so `config.py` matched inside the unrelated
+  word `reconfig.python` and `utils.py` matched inside `test_utils.py` — the same
+  defect class the v0.3.0 verifier fix repaired, one layer earlier. Matches now
+  require a real path-token boundary.
+
+### Added
+- **Java AST verification.** `.java` claims previously always degraded to `VAGUE`;
+  they now reach the same AST-delta verdict path (`PASS`/`LIE`) as Python,
+  TypeScript, Go, and Rust. The grammar ships in the existing
+  `tree-sitter-language-pack` dependency, so there is no new dependency.
+
 ## [0.3.0] - 2026-06-30
 
 A fix-focused release. Five correctness defects in the honesty engine, the

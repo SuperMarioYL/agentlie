@@ -71,7 +71,7 @@ the Agent lied.
   </picture>
 </p>
 
-One session flows left to right through four in-process modules. `parser.py` walks the `.jsonl` into a per-turn DAG along `parentUuid` and pins each file's before/after ground truth from `toolUseResult.originalFile`. `extractor.py` lifts every `fix/add/remove/rename/update` claim out of the assistant text into a `ClaimSpan`, then `verifier.py` computes a tree-sitter AST delta for Python / TypeScript / Go / Rust and applies the verb predicate to decide whether the claimed change actually happened. Finally `report.py` renders the `PASS / VAGUE / LIE` table — entirely offline, no API key, nothing uploaded.
+One session flows left to right through four in-process modules. `parser.py` walks the `.jsonl` into a per-turn DAG along `parentUuid` and pins each file's before/after ground truth from `toolUseResult.originalFile`. `extractor.py` lifts every `fix/add/remove/rename/update` claim out of the assistant text into a `ClaimSpan`, then `verifier.py` computes a tree-sitter AST delta for Python / TypeScript / Go / Rust / Java and applies the verb predicate to decide whether the claimed change actually happened. Finally `report.py` renders the `PASS / VAGUE / LIE` table — entirely offline, no API key, nothing uploaded.
 
 ## Install + 30-second quickstart
 
@@ -151,7 +151,7 @@ is part of the inspiration here.
         │
         ▼
 [verifier.py]  pulls before/after for the claimed path, runs tree-sitter
-               (Python/TS/Go/Rust), computes AST delta, applies the
+               (Python/TS/Go/Rust/Java), computes AST delta, applies the
                verb-predicate:
                  add    → expect new if/import/function/class node
                  remove → expect those node counts to drop
@@ -188,14 +188,15 @@ No config file. Everything via CLI flag:
 - [x] **v0.2** `--llm-extract` wired to Claude Haiku, with graceful offline fallback
 - [x] **v0.2** Go / Rust AST delta coverage
 - [x] **v0.3** Verdict-accuracy fixes: non-structural add/remove no longer false-LIE, a pre-existing symbol no longer false-PASSes an `add`, the basename fallback matches at path boundaries only, `replace_all` is replayed in full, and `parse` honors Codex logs
-- [ ] **v0.3** Cursor / Aider / Aider-roo transcript support
-- [ ] **v0.3** "Lies in the wild" monthly anonymized dataset
-- [ ] **v0.4** Self-host "team transparency report" mode
+- [x] **v0.4** Codex Update patches rebuild the before-state (removal claims can PASS, pre-existing symbols aren't false-added), extractor target paths match at path boundaries, and AST verdicts add Java coverage
+- [ ] Cursor / Aider / Aider-roo transcript support
+- [ ] "Lies in the wild" monthly anonymized dataset
+- [ ] Self-host "team transparency report" mode
 
 ## What is out of scope
 
 - Claude Code JSONL and Codex logs supported — Cursor / Aider in v0.3
-- AST verdicts for Python / TypeScript / Go / Rust; other languages fall back to string-diff and **never** emit LIE on AST grounds alone
+- AST verdicts for Python / TypeScript / Go / Rust / Java; other languages fall back to string-diff and **never** emit LIE on AST grounds alone
 - No replay, no rollback, no auto-fix — read-only report
 - No in-flight interception — post-session replay only
 - No web UI, no IDE plugin, no hosted SaaS

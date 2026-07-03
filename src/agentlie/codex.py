@@ -38,8 +38,11 @@ _PATCH_TOOLS = {"apply_patch", "applypatch", "edit_file", "write_file", "create_
 
 # apply_patch envelope markers.
 _PATCH_BEGIN = "*** Begin Patch"
+# Capture the op (Add / Update / Delete) as well as the path, so an Update hunk
+# can reconstruct BOTH the before-state (context + '-' lines) and the after-state
+# (context + '+' lines) instead of discarding the before entirely.
 _PATCH_FILE_RE = re.compile(
-    r"^\*\*\* (?:Add|Update|Delete) File: (?P<path>.+?)\s*$", re.MULTILINE
+    r"^\*\*\* (?P<op>Add|Update|Delete) File: (?P<path>.+?)\s*$", re.MULTILINE
 )
 
 
@@ -146,36 +149,67 @@ def _patch_input(ev: dict) -> Optional[str]:
 
 
 def _edits_from_patch(patch: str) -> list[ActualEdit]:
-    """Turn an apply_patch envelope into ActualEdit (Write/Edit) records.
+    """Turn an apply_patch envelope into ActualEdit (Write) records.
 
-    We model each touched file as a Write of its post-patch hunk text. This is
-    a coarse but honest after-state: the verifier's string + AST checks operate
-    on it the same way they do for Claude Code Write edits.
+    Each touched file becomes a Write of its post-patch hunk text (context + '+'
+    lines). Crucially, for an **Update** hunk we ALSO reconstruct the before-state
+    (context + '-' lines) and stash it on the edit's ``before_content``, so the
+    verifier's honesty checks receive real ground truth instead of a ``None``
+    before:
+
+      * a genuine "removed X" claim can PASS — ``symbol_removed`` needs the symbol
+        present in ``before_content`` and absent in ``after_content``; the removed
+        symbol lives in the dropped '-' line, so we must keep it in the before.
+      * the "add of a pre-existing symbol" guard (verifier ``verb=='add'``) can
+        fire — it needs the symbol visible in ``before_content`` when the patch's
+        context lines show it already existed.
+
+    Add hunks keep ``before_content=""`` (new file); Delete hunks keep
+    ``after_content=""`` with the pre-delete content as ``before_content``. The
+    parser's replay only fills before/after when they are still ``None``, so these
+    patch-derived states win for Codex (which has no cross-turn originalFile).
     """
     edits: list[ActualEdit] = []
     files = list(_PATCH_FILE_RE.finditer(patch))
     if not files:
         return edits
     for idx, match in enumerate(files):
+        op = match.group("op")
         path = match.group("path").strip()
         start = match.end()
         end = files[idx + 1].start() if idx + 1 < len(files) else len(patch)
         body = patch[start:end]
         # Strip the trailing "*** End Patch" marker if it landed in the last hunk.
         body = body.split("*** End Patch", 1)[0]
-        # Reconstruct added/context lines (drop the leading +/space markers).
-        added: list[str] = []
+        # Reconstruct BOTH sides from the unified hunk:
+        #   after  = context (' ') + additions ('+')
+        #   before = context (' ') + removals  ('-')
+        after_lines: list[str] = []
+        before_lines: list[str] = []
         for line in body.splitlines():
             if line.startswith("+"):
-                added.append(line[1:])
+                after_lines.append(line[1:])
+            elif line.startswith("-"):
+                before_lines.append(line[1:])
             elif line.startswith(" "):
-                added.append(line[1:])
-            # '-' lines are removals; omit from the after-state.
-        content = "\n".join(added).strip("\n")
-        if "Delete File:" in patch[max(0, match.start() - 40):match.end()]:
-            edits.append(ActualEdit(tool="Write", path=path, content=""))
-        else:
-            edits.append(ActualEdit(tool="Write", path=path, content=content))
+                after_lines.append(line[1:])
+                before_lines.append(line[1:])
+            # any other marker line (e.g. "@@") is not file content — skip it.
+        after = "\n".join(after_lines).strip("\n")
+        before = "\n".join(before_lines).strip("\n")
+        if op == "Delete":
+            edit = ActualEdit(tool="Write", path=path, content="")
+            edit.before_content = before
+            edit.after_content = ""
+        elif op == "Add":
+            edit = ActualEdit(tool="Write", path=path, content=after)
+            edit.before_content = ""
+            edit.after_content = after
+        else:  # Update — the case that used to drop the before-state entirely.
+            edit = ActualEdit(tool="Write", path=path, content=after)
+            edit.before_content = before
+            edit.after_content = after
+        edits.append(edit)
     return edits
 
 
@@ -231,10 +265,21 @@ def parse_codex_session(path: str | Path) -> tuple[list[Turn], FileStateTracker]
         for edit in pending_edits:
             if not edit.path:
                 continue
-            before, after = tracker.apply_edit(edit)
-            edit.before_content = before
-            edit.after_content = after
-            edit.source = "replay"
+            # apply_patch already reconstructed the real before/after from the hunk
+            # (context + '-' = before, context + '+' = after). When present, that is
+            # the ground truth for Codex — the tracker's cross-turn replay must NOT
+            # clobber it (its bare Write model would set before=None on first touch
+            # and blind the verifier's removal / pre-existing-symbol checks). Seed the
+            # tracker's before-state from the patch so cumulative state stays coherent,
+            # advance the tracker, but keep the patch-derived before/after.
+            patch_before = edit.before_content
+            patch_after = edit.after_content
+            if patch_before is not None:
+                tracker.seed_original(edit.path, patch_before)
+            replay_before, replay_after = tracker.apply_edit(edit)
+            edit.before_content = patch_before if patch_before is not None else replay_before
+            edit.after_content = patch_after if patch_after is not None else replay_after
+            edit.source = "patch" if patch_before is not None else "replay"
         turn_id += 1
         turns.append(
             Turn(

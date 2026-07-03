@@ -17,7 +17,7 @@ from agentlie.extractor import extract_claims
 from agentlie.verifier import verify_pair, verify_session
 from agentlie.report import render_report
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "ActualEdit",

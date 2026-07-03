@@ -72,8 +72,12 @@ VERB_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+# The trailing ``(?!\w|\.\w)`` guard stops the extension from being matched inside a
+# longer word — e.g. ``reconfig.python`` must NOT yield ``reconfig.py`` — while still
+# allowing a path that ends a sentence (``main.py.`` → ``main.py``, since the trailing
+# ``.`` is followed by a non-word char).
 PATH_PATTERN = re.compile(
-    r"`?(?P<path>(?:[./~]?[\w./-]+/)*[\w.-]+\.(?:py|ts|tsx|js|jsx|go|rs|md|yml|yaml|json|toml))`?"
+    r"`?(?P<path>(?:[./~]?[\w./-]+/)*[\w.-]+\.(?:py|ts|tsx|js|jsx|go|rs|java|md|yml|yaml|json|toml))(?!\w|\.\w)`?"
 )
 
 SYMBOL_PATTERN = re.compile(r"`(?P<sym>[A-Za-z_][\w.]*)`")
@@ -100,19 +104,40 @@ def _split_sentences(text: str) -> list[tuple[str, int, int]]:
     return out
 
 
+def _sentence_mentions_base(sentence: str, base: str) -> bool:
+    """True if ``base`` appears in ``sentence`` as a whole path token, not a bare
+    substring.
+
+    A bare ``base in sentence`` is not path-segment-safe: the basename ``config.py``
+    would match inside the unrelated word ``reconfig.python`` — the same class of
+    defect the verifier's ``_matching_edits`` basename fallback had to fix. We require
+    the match to sit at a token boundary: the characters flanking the basename must not
+    be part of a larger path/identifier token (word chars, ``.``, ``/``, ``-``). A
+    leading ``/`` is fine (a real path segment boundary).
+    """
+    boundary = r"[^\w./\\-]"
+    pattern = rf"(?:^|{boundary}|/)" + re.escape(base) + rf"(?={boundary}|$)"
+    return re.search(pattern, sentence) is not None
+
+
 def _scan_target_path(sentence: str, candidate_paths: Iterable[str]) -> Optional[str]:
     """Find a file path in the sentence, preferring ones the agent actually edited."""
     cand_set = set(candidate_paths)
-    # 1. exact mention of one of the edited paths
+    # 1. exact mention of one of the edited paths — but only at a real path-token
+    #    boundary, so a bare-basename candidate like ``config.py`` can't match inside
+    #    the unrelated word ``reconfig.python`` (a plain ``path in sentence`` substring
+    #    test is not path-segment-safe; the tail of a full path like ``src/utils.py``
+    #    still matches because its flanking chars are boundaries).
     for path in cand_set:
-        if path and path in sentence:
+        if path and _sentence_mentions_base(sentence, path):
             return path
-    # 2. tail-of-path mention (basename match)
+    # 2. tail-of-path mention (basename match) — same boundary discipline, so
+    #    ``utils.py`` can't match ``test_utils.py``.
     for path in cand_set:
         if not path:
             continue
         base = path.rsplit("/", 1)[-1]
-        if base and base in sentence:
+        if base and base != path and _sentence_mentions_base(sentence, base):
             return path
     # 3. any path-looking token
     m = PATH_PATTERN.search(sentence)

@@ -28,6 +28,7 @@ LANG_BY_EXT = {
     ".jsx": "javascript",
     ".go": "go",
     ".rs": "rust",
+    ".java": "java",
 }
 
 
@@ -104,6 +105,14 @@ ADD_INDICATORS = {
     "trait_item",
     "use_declaration",
     "mod_item",
+    # Java
+    "method_declaration",
+    "class_declaration",
+    "interface_declaration",
+    "import_declaration",
+    "enum_declaration",
+    "field_declaration",
+    "constructor_declaration",
 }
 REMOVE_INDICATORS = ADD_INDICATORS  # symmetric
 RENAME_INDICATORS = {"identifier"}
