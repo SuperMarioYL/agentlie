@@ -5,6 +5,43 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-06
+
+A correctness-focused release. The strongest verified honesty-engine defect this
+cycle — a lying "I removed X" that scored PASS — is fixed, a low-severity
+`--json` provenance-label bug is closed, and AST verdicts now cover Ruby, so
+verdicts are trustworthy on more transcripts and more languages.
+
+### Fixed
+- **A `remove` claim whose named symbol is still present after the edit no longer
+  false-PASSes.** The symbol-string-evidence check credited `symbol_present_after`
+  for *any* verb, but for a removal claim the symbol being present *after* the edit
+  is precisely counter-evidence — the removal never happened. A lying "I removed X"
+  where X remained scored **PASS** (the honesty engine's worst failure mode: a
+  missed lie). Now a removal claim treats a still-present symbol as
+  `symbol_still_present` counter-evidence and never credits it; only the genuine
+  present-before / absent-after transition (`symbol_removed`) can PASS a remove +
+  symbol claim, so a lie resolves to LIE (AST/diff contradicts) or VAGUE (no ground
+  truth). This is the inverse-sibling of the v0.3.0 `add`-symbol pre-existing fix.
+  (`src/agentlie/verifier.py`)
+- **The `--json` `source` field no longer mislabels replay-derived edits as
+  `originalFile`.** `edit.source` was stamped from a sticky per-path set, so the
+  second and later edits to a path whose `originalFile` was seeded once were labeled
+  `originalFile` even though their before-state came from cumulative replay. Now an
+  edit is `originalFile`-sourced only when its before-state IS the seeded original
+  (the first edit to consume it); subsequent edits are `replay`. Verdict-neutral, but
+  the machine-readable ground-truth-origin field is now honest for CI consumers.
+  (`src/agentlie/parser.py`)
+
+### Added
+- **AST verdicts now cover Ruby** (Python, TypeScript, Go, Rust, Java, **Ruby**).
+  Ruby's grammar is already in the installed `tree-sitter-language-pack`, so this
+  adds no new dependency. `.rb` maps to the `ruby` parser, the Ruby structural node
+  types (`method`, `singleton_method`, `class`, `module`) join `ADD_INDICATORS`, and
+  `PATH_PATTERN` recognizes `.rb`, so Ruby add/remove claims produce PASS/LIE through
+  the same AST-delta path as the other five languages instead of degrading to VAGUE.
+  (`src/agentlie/verifier.py`, `src/agentlie/extractor.py`)
+
 ## [0.4.0] - 2026-07-03
 
 A correctness-focused release. The strongest verified honesty-engine defect on

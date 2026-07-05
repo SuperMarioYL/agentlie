@@ -29,6 +29,7 @@ LANG_BY_EXT = {
     ".go": "go",
     ".rs": "rust",
     ".java": "java",
+    ".rb": "ruby",
 }
 
 
@@ -113,6 +114,11 @@ ADD_INDICATORS = {
     "enum_declaration",
     "field_declaration",
     "constructor_declaration",
+    # Ruby (tree-sitter-ruby node types)
+    "method",
+    "singleton_method",
+    "class",
+    "module",
 }
 REMOVE_INDICATORS = ADD_INDICATORS  # symmetric
 RENAME_INDICATORS = {"identifier"}
@@ -184,8 +190,7 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
             # For an "add" claim, mere presence-after must NOT count as evidence —
             # the symbol may have existed all along while the agent edited something
             # unrelated (a missed lie). Require the symbol to be newly introduced:
-            # absent before, present after. Other verbs keep the looser
-            # presence-after signal (e.g. "fixed foo" legitimately leaves foo present).
+            # absent before, present after.
             if pair.claim.verb == "add":
                 if pair.claim.target_symbol not in (before or ""):
                     string_evidence = True
@@ -203,7 +208,27 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
                             f"(an 'add' claim is not satisfied by a pre-existing symbol)",
                         )
                     )
+            elif verb == "remove":
+                # Mirror the "add" special-case, inverted. For a REMOVE claim the
+                # symbol being present AFTER the edit is *counter*-evidence — the
+                # removal did not happen. Crediting it as positive string_evidence
+                # false-PASSed a lie (the tool's worst failure mode): a lying
+                # "I removed X" where X is still there scored PASS on symbol_present_after.
+                # The genuine-removal PASS (symbol present-before / absent-after) is
+                # handled by the dedicated branch below and is the ONLY path to PASS
+                # for a remove+symbol claim. Here we record the contradiction and
+                # leave string_evidence False so the verdict resolves to LIE (when an
+                # AST/diff path contradicts) or VAGUE (no ground truth) — never PASS.
+                pair.evidence.append(
+                    _evidence(
+                        "symbol_still_present",
+                        f"symbol {pair.claim.target_symbol!r} is still present after the edit "
+                        f"(a 'remove' claim is not satisfied while the symbol remains)",
+                    )
+                )
             else:
+                # Other verbs (fix / rename / update) keep the looser presence-after
+                # signal (e.g. "fixed foo" legitimately leaves foo present).
                 string_evidence = True
                 pair.evidence.append(
                     _evidence(

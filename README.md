@@ -62,7 +62,7 @@
   </picture>
 </p>
 
-一条会话从左到右流过四个进程内模块：`parser.py` 顺着 `parentUuid` 把 `.jsonl` 走成按轮的 DAG，并用 `toolUseResult.originalFile` 钉住每个文件的 before/after 真值；`extractor.py` 把每一轮自然语言里的 `fix/add/remove/rename/update` claim 抽成 `ClaimSpan`；`verifier.py` 用 tree-sitter 算 Python / TypeScript / Go / Rust / Java 的 AST delta，按动词判定必要变更是否真的发生。最后 `report.py` 把结果渲染成 `PASS / VAGUE / LIE` 彩色表 —— 全程离线、不需 API key、不上传任何日志。
+一条会话从左到右流过四个进程内模块：`parser.py` 顺着 `parentUuid` 把 `.jsonl` 走成按轮的 DAG，并用 `toolUseResult.originalFile` 钉住每个文件的 before/after 真值；`extractor.py` 把每一轮自然语言里的 `fix/add/remove/rename/update` claim 抽成 `ClaimSpan`；`verifier.py` 用 tree-sitter 算 Python / TypeScript / Go / Rust / Java / Ruby 的 AST delta，按动词判定必要变更是否真的发生。最后 `report.py` 把结果渲染成 `PASS / VAGUE / LIE` 彩色表 —— 全程离线、不需 API key、不上传任何日志。
 
 ## 安装 + 30 秒上手
 
@@ -140,7 +140,7 @@ tessl 是最近的可比对象 —— 但它是**多次运行后的聚合 eval**
         │
         ▼
 [verifier.py]  对每个 claim 取出对应 path 的 before/after，
-               跑 tree-sitter (Python/TS/Go/Rust/Java) 算 AST delta
+               跑 tree-sitter (Python/TS/Go/Rust/Java/Ruby) 算 AST delta
                动词 → 必要 delta：
                  add    需要新增 if/import/function/class 之一
                  remove 需要相应节点减少
@@ -178,6 +178,7 @@ tessl 是最近的可比对象 —— 但它是**多次运行后的聚合 eval**
 - [x] **v0.2** Go / Rust 的 AST delta 覆盖
 - [x] **v0.3** 判定准确性修复：非结构性 add/remove 不再误判 LIE、symbol 预存在不再误判 PASS、basename 回退按路径边界匹配、`replace_all` 全量回放、`parse` 支持 Codex 日志
 - [x] **v0.4** Codex Update 补丁重建 before 态（移除类 claim 可判 PASS、预存在 symbol 不再误判）、extractor 目标路径按路径边界匹配、AST delta 新增 Java 覆盖
+- [x] **v0.5** 移除类 claim 若 symbol 仍在则不再误判 PASS（诚实性引擎最严重的漏判已堵）、`--json` 的 `source` 字段不再把回放态误标为 `originalFile`、AST delta 新增 Ruby 覆盖
 - [ ] Cursor / Aider / Aider-roo
 - [ ] "lies in the wild" 月度匿名数据集
 - [ ] 团队自托管 "transparency report" 模式
@@ -185,7 +186,7 @@ tessl 是最近的可比对象 —— 但它是**多次运行后的聚合 eval**
 ## 限制 / 不在范围
 
 - 支持 Claude Code 的 JSONL 与 Codex 日志格式 —— Cursor / Aider 在 v0.3
-- AST delta 覆盖 Python / TypeScript / Go / Rust / Java，其它语言走 string-diff，**永远不会**仅凭它判 LIE
+- AST delta 覆盖 Python / TypeScript / Go / Rust / Java / Ruby，其它语言走 string-diff，**永远不会**仅凭它判 LIE
 - 不会重放 / 不会回滚 / 不会自动修复 —— 只读报告
 - 不拦截在线 Agent —— 是 post-session 回放
 - 没有 web UI、没有 IDE 插件、没有 SaaS

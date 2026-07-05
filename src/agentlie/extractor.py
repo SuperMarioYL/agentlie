@@ -77,7 +77,7 @@ VERB_PATTERN = re.compile(
 # allowing a path that ends a sentence (``main.py.`` → ``main.py``, since the trailing
 # ``.`` is followed by a non-word char).
 PATH_PATTERN = re.compile(
-    r"`?(?P<path>(?:[./~]?[\w./-]+/)*[\w.-]+\.(?:py|ts|tsx|js|jsx|go|rs|java|md|yml|yaml|json|toml))(?!\w|\.\w)`?"
+    r"`?(?P<path>(?:[./~]?[\w./-]+/)*[\w.-]+\.(?:py|ts|tsx|js|jsx|go|rs|java|rb|md|yml|yaml|json|toml))(?!\w|\.\w)`?"
 )
 
 SYMBOL_PATTERN = re.compile(r"`(?P<sym>[A-Za-z_][\w.]*)`")

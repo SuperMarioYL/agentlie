@@ -47,6 +47,11 @@ class FileStateTracker:
     def __init__(self) -> None:
         self._state: dict[str, str] = {}
         self._origin_seen: set[str] = set()
+        # The seeded originalFile content per path, kept so an edit can be labeled
+        # source="originalFile" ONLY when its before-state actually equals the seeded
+        # original — the first edit to consume it. Later edits to the same path read a
+        # replayed before, so they must be labeled "replay", not the sticky "originalFile".
+        self._origin_values: dict[str, str] = {}
 
     def get(self, path: str) -> Optional[str]:
         return self._state.get(path)
@@ -56,6 +61,14 @@ class FileStateTracker:
         if path not in self._origin_seen:
             self._state.setdefault(path, content)
             self._origin_seen.add(path)
+            self._origin_values.setdefault(path, content)
+
+    def is_original_before(self, path: str, before: Optional[str]) -> bool:
+        """True iff `before` is the seeded originalFile content for `path` (ground
+        truth), not a replayed cumulative state. Used to stamp edit.source correctly:
+        only the first edit to a seeded path reads the seeded original; subsequent
+        edits read replay, so they must not inherit the sticky "originalFile" label."""
+        return path in self._origin_values and before is not None and before == self._origin_values[path]
 
     def apply_edit(self, edit: ActualEdit) -> tuple[Optional[str], Optional[str]]:
         """Apply an edit; return (before, after) snapshots."""
@@ -277,7 +290,11 @@ def parse_session(path: str | Path) -> tuple[list[Turn], FileStateTracker]:
             before, after = tracker.apply_edit(edit)
             edit.before_content = before
             edit.after_content = after
-            edit.source = "originalFile" if edit.path in tracker._origin_seen else "replay"
+            # Label the ground-truth origin honestly: an edit is "originalFile"-sourced
+            # only when its before-state IS the seeded originalFile (the first edit to a
+            # seeded path). Once an edit has mutated the path, later edits read a replayed
+            # cumulative before — those are "replay", not the sticky "originalFile".
+            edit.source = "originalFile" if tracker.is_original_before(edit.path, before) else "replay"
 
         if not text and not edits:
             continue
