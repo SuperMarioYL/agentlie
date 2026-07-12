@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "name": "agentlie",
+  "github": "https://github.com/SuperMarioYL/agentlie",
+  "host": "agentlie.lei6393.com",
+  "lang": { "primary": "zh", "toggle": true },
+  "accent": ["#a78bfa", "#7c5cff", "#ef4444"],
+  "hero": {
+    "eyebrow": { "zh": "离线 · 无 API key · < 10 秒", "en": "Offline · No API key · < 10s" },
+    "headline": { "zh": "Agent 说改了的\n到底改没改", "en": "Did the agent really\ndo what it claimed" },
+    "sub": {
+      "zh": "agentlie 把每一轮 Agent 自然语言里的 fix / add / remove / rename / update claim 抽出来，跟那一轮真实的 Edit/Write 做 AST delta 对比，翻车的那几行标红。",
+      "en": "agentlie extracts every fix / add / remove / rename / update claim from an agent's own words each turn, checks it against the real Edit/Write calls with an AST delta, and flags the lies in red."
+    },
+    "command": "pip install agentlie",
+    "ctaGithub": { "zh": "在 GitHub 查看", "en": "View on GitHub" },
+    "scroll": { "zh": "向下滚动", "en": "Scroll" }
+  },
+  "advantages": [
+    {
+      "title": { "zh": "逐轮 claim ↔ edit 对仗", "en": "Claim ↔ edit, per turn" },
+      "body": {
+        "zh": "parser 顺着 parentUuid 把 .jsonl 走成按轮的 DAG，用 toolUseResult.originalFile 钉住每个文件的 before/after 真值；extractor 抽出每轮的 claim，verifier 与那一轮真实的 edit 对仗。",
+        "en": "The parser walks the .jsonl into a per-turn DAG along parentUuid, pinning each file's before/after truth from toolUseResult.originalFile; the extractor pulls each turn's claims and the verifier matches them against that turn's real edits."
+      },
+      "chips": ["› per-turn DAG", "› before/after truth"]
+    },
+    {
+      "title": { "zh": "tree-sitter AST delta · 6 语言", "en": "Tree-sitter AST delta, 6 langs" },
+      "body": {
+        "zh": "verifier 用 tree-sitter 算 Python / TypeScript / Go / Rust / Java / Ruby 的 AST delta，按动词判定必要变更是否真的发生 —— 不是简单 string 比对。",
+        "en": "The verifier computes an AST delta for Python, TypeScript, Go, Rust, Java and Ruby with tree-sitter, judging per verb whether the required change actually happened — not a naive string match."
+      },
+      "chips": ["› 6 languages", "› AST, not strings"]
+    },
+    {
+      "title": { "zh": "PASS / VAGUE / LIE 判定", "en": "PASS / VAGUE / LIE verdict" },
+      "body": {
+        "zh": "report 把结果渲染成 PASS / VAGUE / LIE 彩色表 —— path_untouched、no_target 这些证据直接摆出来，红的那几行就是 Agent 谎报的 fix。",
+        "en": "The reporter renders a PASS / VAGUE / LIE table with the evidence spelled out — path_untouched, no_target — so the red rows are exactly the fixes the agent lied about."
+      },
+      "chips": ["› PASS / VAGUE / LIE", "› evidence per row"]
+    },
+    {
+      "title": { "zh": "离线 · 跨框架即插即用", "en": "Offline, framework-agnostic" },
+      "body": {
+        "zh": "默认 --offline：不登录、不需 API key、不上传任何日志；200 轮会话本地跑完 < 10 秒；不绑定具体 agent 框架。",
+        "en": "Default --offline: no login, no API key, no logs uploaded; a 200-turn session runs locally in under 10 seconds; not tied to any one agent framework."
+      },
+      "chips": ["› no API key", "› < 10s / 200 turns"]
+    }
+  ],
+  "scene": { "kind": "particle-field" },
+  "cta": {
+    "headline": { "zh": "验一次你的上一场会话", "en": "Verify your last session" },
+    "sub": {
+      "zh": "MIT 许可，pip install agentlie；指向最近一次 Claude Code 会话就出判定表。",
+      "en": "MIT-licensed, pip install agentlie; point it at your latest Claude Code session for the verdict table."
+    },
+    "button": { "zh": "在 GitHub 查看", "en": "View on GitHub" }
+  },
+  "footer": { "tag": { "zh": "开源 · MIT", "en": "Open source · MIT" } }
+}
