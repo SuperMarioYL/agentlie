@@ -357,7 +357,27 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
         return pair
 
     if verb in {"add", "remove", "fix"}:
-        if ast_evidence is True or string_evidence:
+        ast_pass = ast_evidence is True
+        if pair.claim.target_symbol and verb in {"add", "remove"}:
+            # The AST delta is symbol-AGNOSTIC: _ast_delta counts every
+            # ADD/REMOVE_INDICATOR node that changed anywhere in the edit, not the
+            # specific symbol the claim named. For a SYMBOL-targeted add/remove
+            # claim the only trustworthy PASS is the symbol-level transition —
+            # symbol_introduced (absent-before/present-after) for add, or
+            # symbol_removed (present-before/absent-after) for remove — both of
+            # which are carried by string_evidence / the dedicated early-return
+            # branch above. Letting the symbol-agnostic count PASS the claim
+            # false-PASSed a lie (the honesty engine's worst failure mode): a
+            # lying "I removed `foo`" where foo is still present but an UNRELATED
+            # `bar` was removed scored PASS on ast_remove, and the mirror
+            # "I added `foo`" where foo pre-existed (or was never added) but an
+            # unrelated `bar` was added scored PASS on ast_add — precisely the
+            # contracts v0.5.0 (remove) and v0.3.0 (add) declared but enforced on
+            # the string path ONLY. So an unrelated AST count may no longer carry
+            # a symbol-targeted claim to PASS; without symbol-level evidence it
+            # resolves to LIE (no diff at all) or VAGUE (an unrelated diff exists).
+            ast_pass = False
+        if ast_pass or string_evidence:
             pair.verdict = Verdict.PASS
         elif ast_evidence is False:
             # tree-sitter said the structural change isn't there

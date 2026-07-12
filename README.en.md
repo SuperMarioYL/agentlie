@@ -10,7 +10,7 @@
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue.svg" />
   <img alt="ci" src="https://img.shields.io/badge/CI-passing-brightgreen" />
-  <img alt="status" src="https://img.shields.io/badge/status-v0.3-brightgreen" />
+  <img alt="status" src="https://img.shields.io/badge/status-v0.6-brightgreen" />
   <img alt="Claude Code" src="https://img.shields.io/badge/for-Claude%20Code-7c5cff" />
   <img alt="Coding Agent" src="https://img.shields.io/badge/Coding%20Agent-honesty%20layer-ef4444" />
   <img alt="Agent" src="https://img.shields.io/badge/Agent-verified-22d3ee" />

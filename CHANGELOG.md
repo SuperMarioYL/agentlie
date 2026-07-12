@@ -5,6 +5,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-13
+
+A correctness-focused release. One root-cause missed-lie on the AST verdict path —
+which survived the v0.3.0 and v0.5.0 symbol-lie fixes — is closed for both the
+`add` and `remove` verbs, so a lie can no longer scan as honest via an unrelated
+structural change.
+
+### Fixed
+- **A `remove` claim that names a symbol no longer false-PASSes on an *unrelated*
+  structural removal.** v0.5.0 stopped the string path from crediting a
+  still-present symbol, and promised that "only the genuine present-before /
+  absent-after transition can PASS a remove + symbol claim" — but the AST path
+  bypassed that promise. The AST delta counts *every* removed structural node in
+  the edit, not the named symbol, so a lying "I removed `foo`" where `foo` is still
+  present (or was never there) but an unrelated `bar` was removed scored **PASS** on
+  `ast_remove` — a missed lie, the honesty engine's worst failure mode. Now, for a
+  symbol-targeted `add`/`remove` claim, the symbol-agnostic AST count can no longer
+  carry the verdict to PASS; only the symbol-level transition (`symbol_removed`) can.
+  The lie resolves to VAGUE (an unrelated real diff exists) or LIE (no diff at all).
+  (`src/agentlie/verifier.py`)
+- **The `add` mirror of the same defect is closed.** An "I added `foo`" claim where
+  `foo` pre-existed (or never appears after) but an unrelated `bar` was added
+  structurally scored **PASS** on `ast_add`, defeating the v0.3.0 rule that an `add`
+  claim's named symbol must be *newly introduced*. The same single guard now makes
+  `symbol_introduced` the only path to PASS an `add` + symbol claim. Path-only (no
+  named symbol) `add`/`remove` claims are unaffected and still reach PASS/LIE via the
+  AST delta, so Python/TypeScript/Go/Rust/Java/Ruby structural coverage is unchanged.
+  (`src/agentlie/verifier.py`)
+
 ## [0.5.0] - 2026-07-06
 
 A correctness-focused release. The strongest verified honesty-engine defect this
