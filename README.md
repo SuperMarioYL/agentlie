@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
+  <img alt="Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" />
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue.svg" />
   <img alt="ci" src="https://img.shields.io/badge/CI-passing-brightgreen" />
   <img alt="status" src="https://img.shields.io/badge/status-v0.6-brightgreen" />
