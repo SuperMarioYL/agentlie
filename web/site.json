@@ -54,10 +54,10 @@
   "cta": {
     "headline": { "zh": "验一次你的上一场会话", "en": "Verify your last session" },
     "sub": {
-      "zh": "MIT 许可，pip install agentlie，指向最近一次 Claude Code 会话就出判定表。",
-      "en": "MIT-licensed, pip install agentlie; point it at your latest Claude Code session for the verdict table."
+      "zh": "Apache 2.0 许可，pip install agentlie，指向最近一次 Claude Code 会话就出判定表。",
+      "en": "Apache 2.0-licensed, pip install agentlie; point it at your latest Claude Code session for the verdict table."
     },
     "button": { "zh": "在 GitHub 查看", "en": "View on GitHub" }
   },
-  "footer": { "tag": { "zh": "开源 · MIT", "en": "Open source · MIT" } }
+  "footer": { "tag": { "zh": "开源 · Apache 2.0", "en": "Open source · Apache 2.0" } }
 }
