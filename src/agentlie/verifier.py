@@ -320,8 +320,16 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
                 )
         elif verb == "fix":
             # "fix" is permissive: any AST or textual delta in the target file
-            # counts as evidence the change happened.
-            if delta or (edit.before_content != edit.after_content):
+            # counts as evidence the change happened. Use the NORMALIZED
+            # ``real_diff`` (computed above, None -> "") rather than a raw
+            # ``before_content != after_content``: when an Edit's old_string is
+            # not found on a path the tracker has never seen, the parser sets
+            # before_content=None and after_content="" (current="" -> no change).
+            # ``None != ""`` is True, so the raw comparison would credit a
+            # zero-diff no-op as a textual delta and PASS a missed lie (the
+            # honesty tool's worst failure mode). ``real_diff`` normalizes None
+            # to "" so a no-op counts as no delta, matching add/remove.
+            if delta or real_diff:
                 ast_evidence = True
                 pair.evidence.append(
                     _evidence("fix_delta_present", f"diff present in {edit.path} (delta keys={list(delta)})")
