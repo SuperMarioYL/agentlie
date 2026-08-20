@@ -259,6 +259,20 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
 
     # AST evidence (Python / TypeScript only).
     ast_evidence: Optional[bool] = None
+    # Deferred-downgrade tracking for ast_evidence (see the post-loop resolution
+    # below). ``saw_positive`` is True once any matching edit showed a positive
+    # signal — a structural ADD/REMOVE_INDICATOR delta OR a normalized real_diff
+    # (a genuine but possibly non-structural change). ``ts_ran`` is True once
+    # tree-sitter actually analyzed any matching edit, so the False downgrade
+    # only fires WITH ground truth (a no-coverage turn stays None -> VAGUE).
+    # This replaces the old mid-loop ``ast_evidence = ... else False`` in the
+    # add/remove zero-diff branches, which poisoned multi-edit turns where a
+    # sibling real non-structural edit (whose real-diff branch left ast_evidence
+    # untouched) shared the target — the False stuck and the resolver LIE'd a
+    # truthful change, in BOTH iteration orders. Mirrors the fix branch, whose
+    # real-diff branch already set ast_evidence=True, making it order-independent.
+    saw_positive = False
+    ts_ran = False
     for edit in matches:
         lang = _lang_for(edit.path)
         if not lang:
@@ -269,10 +283,12 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
         delta = _ast_delta(parser, edit.before_content or "", edit.after_content or "")
         edit.ast_delta = delta
         real_diff = (edit.before_content or "") != (edit.after_content or "")
+        ts_ran = True
         if verb == "add":
             added = sum(v for k, v in delta.items() if k in ADD_INDICATORS and v > 0)
             if added > 0:
                 ast_evidence = True
+                saw_positive = True
                 pair.evidence.append(
                     _evidence("ast_add", f"{added} new structural node(s) in {edit.path}: {delta}")
                 )
@@ -282,8 +298,9 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
                 # change DID happen. Hard-setting evidence False here would false-LIE a
                 # truthful agent — the worst failure mode for an honesty tool. Leave
                 # evidence None so an otherwise-unsupported add resolves to VAGUE, never
-                # LIE, when a real textual diff is present. Reserve False (→ LIE) for the
-                # zero-diff case below.
+                # LIE, when a real textual diff is present. Reserve False (-> LIE) for
+                # the zero-diff case, now handled by the deferred post-loop downgrade.
+                saw_positive = True
                 pair.evidence.append(
                     _evidence(
                         "ast_no_add_but_diff",
@@ -292,7 +309,11 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
                     )
                 )
             else:
-                ast_evidence = ast_evidence if ast_evidence else False
+                # Zero-diff no-op: leave ast_evidence untouched here. The False
+                # downgrade is deferred to the post-loop block, gated on no edit
+                # showing any positive signal, so a noop + real non-structural diff
+                # stays None -> VAGUE (order-independent) while a noop-only turn
+                # still resolves False -> LIE.
                 pair.evidence.append(
                     _evidence("ast_no_add", f"no new structural nodes and no diff in {edit.path} (delta={delta})")
                 )
@@ -300,12 +321,14 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
             removed = sum(-v for k, v in delta.items() if k in REMOVE_INDICATORS and v < 0)
             if removed > 0:
                 ast_evidence = True
+                saw_positive = True
                 pair.evidence.append(
                     _evidence("ast_remove", f"{removed} structural node(s) removed in {edit.path}")
                 )
             elif real_diff:
                 # Symmetric to the add branch: removing a non-structural statement
                 # changes no REMOVE_INDICATOR node yet is a real edit. Do not false-LIE.
+                saw_positive = True
                 pair.evidence.append(
                     _evidence(
                         "ast_no_remove_but_diff",
@@ -314,7 +337,7 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
                     )
                 )
             else:
-                ast_evidence = ast_evidence if ast_evidence else False
+                # Zero-diff no-op: see the add branch — do not downgrade mid-loop.
                 pair.evidence.append(
                     _evidence("ast_no_remove", f"no structural nodes removed and no diff in {edit.path}")
                 )
@@ -335,16 +358,37 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
                     _evidence("fix_delta_present", f"diff present in {edit.path} (delta keys={list(delta)})")
                 )
             else:
-                # Mirror the add/remove branches: only downgrade to False when
-                # no prior edit in this turn already set evidence True. A real
-                # fix plus a noop edit to the same target must not flip to LIE
-                # based on iteration order.
+                # Only downgrade to False when no prior edit in this turn already
+                # set evidence True — a real fix plus a noop edit to the same
+                # target must not flip to LIE based on iteration order. fix stays
+                # order-independent via this guard: its real-diff branch above
+                # sets ast_evidence=True, overriding any prior False. (add/remove
+                # reach the same order-independence via the deferred post-loop
+                # downgrade below, since their real-diff branch leaves
+                # ast_evidence None rather than setting True.)
                 ast_evidence = ast_evidence if ast_evidence else False
                 pair.evidence.append(
                     _evidence("fix_noop", f"no diff in {edit.path}")
                 )
         # "update" and "rename" are intentionally vague — string presence above
         # carries the verdict.
+
+    # Deferred ast_evidence=False downgrade for add/remove. The zero-diff no-op
+    # branches above no longer flip ast_evidence to False mid-loop (that poisoned
+    # multi-edit turns where a sibling real but non-structural edit shared the
+    # target — its real-diff branch left ast_evidence None, the False stuck, and
+    # the resolver LIE'd a truthful change in BOTH iteration orders). Now downgrade
+    # to False (-> LIE) only when tree-sitter actually analyzed at least one
+    # matching edit AND none showed a positive signal. A real non-structural diff
+    # keeps ast_evidence None (-> VAGUE); a structural ADD/REMOVE_INDICATOR delta
+    # already set it True (-> PASS). This makes add/remove order-independent,
+    # mirroring the fix branch (whose real-diff branch already set True). The
+    # single-edit noop -> LIE contract is preserved: a noop-only turn shows no
+    # positive signal, so ts_ran + no-signal -> False -> LIE. The fix verb is
+    # untouched: its two branches always set ast_evidence (True/False), so it is
+    # never None here and this block never fires for fix.
+    if ast_evidence is None and ts_ran and not saw_positive:
+        ast_evidence = False
 
     # Resolve verdict.
     if verb == "update":

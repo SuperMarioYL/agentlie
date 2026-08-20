@@ -5,6 +5,33 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-20
+
+A correctness-focused release closing one multi-edit false-LIE that survived the
+v0.3.0 single-edit no-op fix. In a turn where ONE edit is a no-op (Edit
+`old_string` not found → `before==after`) and the OTHER is a real but
+non-structural add/remove (a print/log/assignment/return/comment — changes no
+ADD/REMOVE_INDICATOR node), the verdict falsely became LIE on a truthful change,
+in BOTH iteration orders. The `fix` verb was immune; only `add`/`remove` were
+affected.
+
+### Fixed
+- **A multi-edit turn mixing a no-op edit with a real non-structural add/remove
+  no longer false-LIEs.** The add/remove zero-diff branches ran
+  `ast_evidence = ast_evidence if ast_evidence else False` mid-loop, converting
+  the initial `None`→`False`; the subsequent real-diff non-structural branch
+  (`ast_no_add_but_diff` / `ast_no_remove_but_diff`) did not touch `ast_evidence`,
+  so the `False` stuck and the resolver (`elif ast_evidence is False`) emitted
+  LIE — the honesty engine's inverse worst failure mode: a truthful change
+  branded a lie. The `False` downgrade is now deferred until AFTER the AST loop
+  and fires only when NO matching edit showed a positive signal (a structural
+  ADD/REMOVE_INDICATOR delta OR a normalized `real_diff`). A real non-structural
+  diff keeps `ast_evidence` `None` (→ VAGUE); a structural delta keeps it `True`
+  (→ PASS); a no-op-only turn still resolves `False`→LIE (the single-edit no-op
+  contract from v0.3.0 is preserved). This mirrors how the `fix` branch already
+  behaved (its real-diff branch set `ast_evidence=True`, making it
+  order-independent). (`src/agentlie/verifier.py`)
+
 ## [0.6.0] - 2026-07-13
 
 A correctness-focused release. One root-cause missed-lie on the AST verdict path —
