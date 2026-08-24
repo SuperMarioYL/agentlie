@@ -82,6 +82,15 @@ PATH_PATTERN = re.compile(
 
 SYMBOL_PATTERN = re.compile(r"`(?P<sym>[A-Za-z_][\w.]*)`")
 
+# Capture "renamed `old` to `new`" phrasing so a rename claim carries BOTH
+# identifiers. The verifier needs the old name (did it disappear?) and the new
+# name (did it appear?) to confirm a rename rather than PASS on any unrelated
+# textual diff — the README contract is "rename 看 symbol 是否真消失/出现".
+RENAME_PATTERN = re.compile(
+    r"\brenamed\s+`?(?P<old>[\w.]+)`?\s+to\s+`?(?P<new>[\w.]+)`?",
+    re.IGNORECASE,
+)
+
 # A "claim sentence" is roughly a sentence containing a recognised verb.
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?。！？])\s+|\n+")
 
@@ -164,12 +173,26 @@ def extract_claims(turns: list[Turn]) -> list[ClaimEditPair]:
             verb_raw = m.group("verb").lower()
             verb = VERB_SYNONYMS.get(verb_raw, verb_raw)
             target_path = _scan_target_path(sentence, candidate_paths)
-            target_symbol = _scan_target_symbol(sentence) if not target_path else None
+            new_symbol: Optional[str] = None
+            if verb == "rename":
+                # A rename claim keeps its target_symbol even when a path is also
+                # named — unlike add/remove, which null it out so the path alone
+                # carries the verdict. Capture both the old and new identifier so
+                # the verifier can confirm the symbol really disappeared/reappeared.
+                rm = RENAME_PATTERN.search(sentence)
+                if rm:
+                    target_symbol = rm.group("old")
+                    new_symbol = rm.group("new")
+                else:
+                    target_symbol = _scan_target_symbol(sentence)
+            else:
+                target_symbol = _scan_target_symbol(sentence) if not target_path else None
             claim = ClaimSpan(
                 text=sentence,
                 verb=verb,
                 target_path=target_path,
                 target_symbol=target_symbol,
+                new_symbol=new_symbol,
             )
             # Edits scoped to this turn — verifier will weigh by path match.
             pairs.append(

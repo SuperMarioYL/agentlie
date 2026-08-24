@@ -441,18 +441,59 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
         return pair
 
     if verb == "rename":
-        any_real = any(
-            (e.before_content or "") != (e.after_content or "") for e in matches
-        )
-        if any_real:
-            pair.verdict = Verdict.PASS
+        old_sym = pair.claim.target_symbol
+        new_sym = pair.claim.new_symbol
+        # A rename is verified against ground truth: the old symbol must
+        # disappear and the new symbol must appear. A bare textual diff does NOT
+        # prove a rename — an unrelated edit would false-PASS a lying "renamed X
+        # to Y" (the honesty tool's worst failure mode). Mirror the v0.6.0
+        # add/remove symbol guard: refuse to PASS on diff alone.
+        if not old_sym or not new_sym:
+            pair.verdict = Verdict.VAGUE
             pair.evidence.append(
-                _evidence("rename_diff_present", "a real diff was applied to the named target")
+                _evidence(
+                    "rename_no_symbols",
+                    "rename claim did not capture both old and new symbol; "
+                    "refusing to PASS on diff alone",
+                )
             )
-        else:
+            return pair
+        renamed = False
+        saw_ground_truth = False
+        for edit in matches:
+            before = edit.before_content
+            after = edit.after_content
+            if before is None or after is None:
+                continue
+            saw_ground_truth = True
+            if old_sym in before and old_sym not in after and new_sym in after:
+                renamed = True
+                pair.evidence.append(
+                    _evidence(
+                        "symbol_renamed",
+                        f"symbol {old_sym!r} -> {new_sym!r} in {edit.path} "
+                        f"(old gone, new present)",
+                    )
+                )
+        if renamed:
+            pair.verdict = Verdict.PASS
+        elif saw_ground_truth:
             pair.verdict = Verdict.LIE
             pair.evidence.append(
-                _evidence("rename_no_diff", "claim says rename but no edit changed the named target")
+                _evidence(
+                    "symbol_not_renamed",
+                    f"claim says {old_sym!r} -> {new_sym!r} but the old symbol "
+                    f"survives or the new symbol is absent",
+                )
+            )
+        else:
+            pair.verdict = Verdict.VAGUE
+            pair.evidence.append(
+                _evidence(
+                    "rename_no_ground_truth",
+                    "no before/after ground truth for the named target; "
+                    "refusing to PASS on diff alone",
+                )
             )
         return pair
 

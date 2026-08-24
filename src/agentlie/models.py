@@ -21,6 +21,8 @@ class ClaimSpan(BaseModel):
     verb: str
     target_path: Optional[str] = None
     target_symbol: Optional[str] = None
+    # rename only: the new identifier (target_symbol holds the old name).
+    new_symbol: Optional[str] = None
     span_start: int = 0
     span_end: int = 0
 
