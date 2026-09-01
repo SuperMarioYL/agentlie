@@ -5,6 +5,45 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-02
+
+A release-hygiene release closing a version-drift defect: the v0.9.0 tag was cut
+from a single rename-verifier commit that bumped the git tag but left every
+derived version surface stale, so the release mis-reported its own version.
+
+### Fixed
+- **The release now self-reports its own version.** At the v0.9.0 tag
+  `agentlie --version` printed `0.8.0` while the tag was `v0.9.0` — the tag cut
+  bumped only the git tag, not the in-source surfaces. `pyproject.toml`
+  (`version =`) and `src/agentlie/__init__.py` (`__version__`) both stayed at
+  `0.8.0`, and the Click `--version` option that reads `__version__`
+  (`src/agentlie/cli.py`) therefore reported the wrong version. The release
+  also omitted its CHANGELOG entry and `web/site.json` carried no
+  `content_version` field. Every version surface now tracks the canonical
+  `pyproject.toml` version, and a lockstep regression test asserts they stay in
+  sync so the next bump cannot silently drift the way v0.9.0 did.
+  (`pyproject.toml`, `src/agentlie/__init__.py`, `web/site.json`,
+  `tests/test_v100.py`)
+
+## [0.9.0] - 2026-08-24
+
+A correctness-focused release closing one rename false-PASS. A rename claim
+("renamed `old` to `new`") used to resolve to PASS whenever ANY matching edit
+produced a textual diff, with zero verification that the claimed rename actually
+happened — a lying "renamed X to Y" whose only Edit changed an unrelated comment
+(X still present, Y absent) scored PASS on the bare diff. The rename verdict now
+PASSes ONLY when the old symbol is gone and the new symbol is present in the
+post-edit content.
+
+### Fixed
+- **A rename claim is now verified against the symbol transition, not any
+  diff.** The `rename` branch now requires the old symbol to have disappeared
+  AND the new symbol to have appeared in the post-edit content; a bare textual
+  diff no longer carries a rename claim to PASS. The extractor captures both
+  identifiers from "renamed `old` to `new`" phrasing so the verifier has both
+  names to confirm. (`src/agentlie/verifier.py`, `src/agentlie/extractor.py`,
+  `src/agentlie/models.py`, `tests/test_verifier.py`)
+
 ## [0.8.0] - 2026-08-20
 
 A correctness-focused release closing one multi-edit false-LIE that survived the
