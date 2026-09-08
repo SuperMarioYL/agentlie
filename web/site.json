@@ -104,6 +104,10 @@
           "alt": {
             "zh": "实际检查一条人为构造的会话，得到 7 个声明：3 PASS、2 VAGUE、2 LIE。没有执行 Agent、重放 shell 动作或证明代码功能已正确。",
             "en": "The real check of a deliberately constructed transcript yields seven claims: three PASS, two VAGUE and two LIE. It does not execute an agent, replay shell actions or prove the code works."
+          },
+          "mobile": {
+            "light": "/assets/presentation/process-mobile-light.svg",
+            "dark": "/assets/presentation/process-mobile-dark.svg"
           }
         }
       },
@@ -122,6 +126,10 @@
           "alt": {
             "zh": "parser.py 和 codex.py 还原会话及文件前后态，extractor.py 提取声明，verifier.py 比较路径、文本和可用 tree-sitter AST 节点变化，report.py 生成表格或 JSON。默认离线模式不调用模型。",
             "en": "parser.py and codex.py reconstruct sessions and before/after file states. extractor.py extracts claims; verifier.py compares paths, text and available tree-sitter AST deltas; report.py emits tables or JSON. Default offline mode makes no model calls."
+          },
+          "mobile": {
+            "light": "/assets/presentation/architecture-mobile-light.svg",
+            "dark": "/assets/presentation/architecture-mobile-dark.svg"
           }
         }
       },
@@ -140,6 +148,10 @@
           "alt": {
             "zh": "检查依赖日志完整性与修改重建。PASS 表示满足所用规则，VAGUE 表示证据不足或声明难以核对，LIE 表示命中反证规则；都应连同 evidence 查看。",
             "en": "Checks depend on log completeness and edit reconstruction. PASS satisfies the applied rule, VAGUE indicates insufficient or ambiguous evidence, and LIE matches a contradiction rule. Read each with its evidence."
+          },
+          "mobile": {
+            "light": "/assets/presentation/integrations-mobile-light.svg",
+            "dark": "/assets/presentation/integrations-mobile-dark.svg"
           }
         }
       }
