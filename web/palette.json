@@ -1,0 +1,38 @@
+{
+  "mode": "auto",
+  "id": "e656d0-e76a91-e6acf6-3ced5fffda3d",
+  "identity": "https://github.com/supermarioyl/agentlie",
+  "primary": "#e656d0",
+  "secondary": "#e76a91",
+  "highlight": "#e6acf6",
+  "dark": {
+    "bg": "#0a0711",
+    "panel": "#13101d",
+    "code": "#140d1c",
+    "ink": "#faeefd",
+    "muted": "#b29cc0",
+    "line": "#3a183b",
+    "primary": "#e656d0",
+    "secondary": "#e76a91",
+    "highlight": "#e6acf6",
+    "accent": "#e656d0",
+    "buttonStart": "#bd47ab",
+    "buttonEnd": "#ba5575",
+    "buttonText": "#ffffff"
+  },
+  "light": {
+    "bg": "#fef9fd",
+    "panel": "#fef7fd",
+    "code": "#fdf3fc",
+    "ink": "#27162d",
+    "muted": "#725e83",
+    "line": "#f7cbf0",
+    "primary": "#b543a3",
+    "secondary": "#b2516f",
+    "highlight": "#876591",
+    "accent": "#b543a3",
+    "buttonStart": "#bd47ab",
+    "buttonEnd": "#ba5575",
+    "buttonText": "#ffffff"
+  }
+}

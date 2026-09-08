@@ -1,64 +1,244 @@
 {
-  "schema": 1,
+  "schema": 3,
   "name": "agentlie",
-  "content_version": "0.10.0",
   "github": "https://github.com/SuperMarioYL/agentlie",
   "host": "agentlie.lei6393.com",
-  "lang": { "primary": "zh", "toggle": true },
-  "accent": ["#a78bfa", "#7c5cff", "#ef4444"],
+  "palette": "auto",
+  "lang": {
+    "primary": "zh",
+    "toggle": true
+  },
+  "meta": {
+    "visual_profile": "neon-particle",
+    "content_version": "0.10.0",
+    "demo_source": "docs/demo-results.json"
+  },
   "hero": {
-    "eyebrow": { "zh": "离线 · 无 API key · < 10 秒", "en": "Offline · No API key · < 10s" },
-    "headline": { "zh": "Agent 说改了的\n到底改没改", "en": "Did the agent really\ndo what it claimed" },
-    "sub": {
-      "zh": "几十轮跑完，Agent 在结尾轻飘飘一句『已修复 X』『已添加 Y』—— 可文件可能根本没动。agentlie 一条命令把每一句承诺和那一轮真实改动对一遍，翻车的那几行直接标红，省下你逐个翻 diff 的时间。",
-      "en": "After dozens of turns the agent breezes past 'fixed X, added Y' — but the files may never have moved. One command checks each claim against that turn's real edits, flags the lies in red, and saves you reading every diff by hand."
+    "eyebrow": {
+      "zh": "从 Claude Code 或 Codex 日志提取修改声明，与记录中的文件变化对照并展示证据。",
+      "en": "Extract change claims from Claude Code or Codex logs, compare them with recorded file changes, and inspect the evidence."
     },
-    "command": "pip install agentlie",
-    "ctaGithub": { "zh": "在 GitHub 查看", "en": "View on GitHub" },
-    "scroll": { "zh": "向下滚动", "en": "Scroll" }
+    "headline": {
+      "zh": "说过修复了什么，\n就回到编辑记录核对",
+      "en": "A fix was claimed.\nCheck the recorded edit."
+    },
+    "sub": {
+      "zh": "从 Claude Code 或 Codex 日志提取修改声明，与记录中的文件变化对照并展示证据。",
+      "en": "Extract change claims from Claude Code or Codex logs, compare them with recorded file changes, and inspect the evidence."
+    },
+    "href": "#quickstart",
+    "cta": {
+      "zh": "运行示例",
+      "en": "Run the example"
+    },
+    "ctaGithub": {
+      "zh": "查看源码",
+      "en": "View source"
+    }
+  },
+  "scene": {
+    "kind": "neon-graph",
+    "caption": {
+      "zh": "声明 · 修改 · 证据",
+      "en": "CLAIMS · EDITS · EVIDENCE"
+    },
+    "fallback": "/assets/presentation/scene-dark.svg",
+    "fallbackLight": "/assets/presentation/scene-light.svg"
   },
   "advantages": [
     {
-      "title": { "zh": "逐句承诺，逐轮对账", "en": "Every claim, checked per turn" },
-      "body": {
-        "zh": "Agent 一轮里说『修了 X』『加了 Y』，agentlie 就把这一轮的话和这一轮真实改的文件对一遍 —— 不是几十轮糊成一个总分，是哪一句没兑现，单独拎出来。",
-        "en": "When the agent says 'fixed X, added Y' in a turn, agentlie checks that turn's words against that turn's real file changes — not a blended score across dozens of turns, but each unkept promise singled out."
+      "title": {
+        "zh": "逐声明对照",
+        "en": "Compare per claim"
       },
-      "chips": ["› 逐轮对账", "› 不糊成总分"]
+      "body": {
+        "zh": "声明关联到目标路径和记录的修改。",
+        "en": "Claims connect to target paths and recorded changes."
+      }
     },
     {
-      "title": { "zh": "看的是代码结构，不是字面", "en": "Reads code structure, not just text" },
-      "body": {
-        "zh": "Agent 说『加了 null check』，agentlie 不会因为注释里冒出个 null 就算它通过，也不会漏掉一次真改名 —— 它按 Python / TypeScript / Go / Rust / Java / Ruby 的代码结构判断那一轮的改动到底成不成立。",
-        "en": "When the agent says 'added a null check', agentlie won't pass it just because the word null shows up in a comment, and it won't miss a real rename — it judges whether the turn's change actually holds up by the code structure of Python / TypeScript / Go / Rust / Java / Ruby."
+      "title": {
+        "zh": "看得到依据",
+        "en": "Inspect evidence"
       },
-      "chips": ["› 6 种语言", "› 看结构不看字面"]
+      "body": {
+        "zh": "报告保留文本、AST 或路径匹配原因。",
+        "en": "Reports retain text, AST and path-matching reasons."
+      }
     },
     {
-      "title": { "zh": "一张表，红的就没做", "en": "One table — red means it didn't happen" },
-      "body": {
-        "zh": "跑完给你一张表：绿 = 真做了，黄 = 说不清，红 = Agent 那句『已修复』其实根本没动手 —— 每行都附上证据（文件没动 / 找不到目标），你不用再翻 diff 自己对。",
-        "en": "You get a table: green = really did it, yellow = unclear, red = that 'fixed it' was never actually done — each row comes with its evidence (the file was never touched / the target can't be found) so you don't dig through diffs yourself."
+      "title": {
+        "zh": "默认本地检查",
+        "en": "Check locally by default"
       },
-      "chips": ["› 红 = 没做", "› 证据摆出来"]
-    },
-    {
-      "title": { "zh": "不联网、不上传、装完就跑", "en": "No network, no uploads, run it right after install" },
       "body": {
-        "zh": "不用登录、不用 API key、不上传任何会话日志 —— 200 轮的会话在自己机器上 10 秒内跑完。不绑定某个 agent 框架，Claude Code 的会话开箱即用。",
-        "en": "No login, no API key, no session logs uploaded — a 200-turn session finishes on your own machine in under 10 seconds. Not tied to one agent framework; Claude Code sessions work out of the box."
-      },
-      "chips": ["› 不联网", "› 200 轮 < 10 秒"]
+        "zh": "离线规则无需模型 key，也不上传日志。",
+        "en": "Offline rules need no model key and do not upload logs."
+      }
     }
   ],
-  "scene": { "kind": "particle-field" },
-  "cta": {
-    "headline": { "zh": "验一次你的上一场会话", "en": "Verify your last session" },
-    "sub": {
-      "zh": "Apache 2.0 许可，pip install agentlie，指向最近一次 Claude Code 会话就出判定表。",
-      "en": "Apache 2.0-licensed, pip install agentlie; point it at your latest Claude Code session for the verdict table."
+  "story": {
+    "intro": {
+      "title": {
+        "zh": "缩短从总结回到修改的距离",
+        "en": "Connect the summary to the edits"
+      },
+      "body": {
+        "zh": "会话结束时的自然语言总结可能与工具日志不一致。agentlie 把 fix、add、remove、rename、update 声明关联到目标路径及当轮修改，用规则给出 PASS、VAGUE 或 LIE 标签和证据，帮助人工复查。标签不是对 Agent 主观意图的判断。",
+        "en": "A session summary can disagree with its tool log. agentlie connects fix, add, remove, rename and update claims to target paths and recorded edits, then reports PASS, VAGUE or LIE with rule-based evidence for review. These labels do not determine an agent’s intent."
+      }
     },
-    "button": { "zh": "在 GitHub 查看", "en": "View on GitHub" }
+    "sections": [
+      {
+        "title": {
+          "zh": "从输入到结果",
+          "en": "From input to result"
+        },
+        "body": {
+          "zh": "实际检查一条人为构造的会话，得到 7 个声明：3 PASS、2 VAGUE、2 LIE。没有执行 Agent、重放 shell 动作或证明代码功能已正确。",
+          "en": "The real check of a deliberately constructed transcript yields seven claims: three PASS, two VAGUE and two LIE. It does not execute an agent, replay shell actions or prove the code works."
+        },
+        "image": {
+          "light": "/assets/presentation/process-light.svg",
+          "dark": "/assets/presentation/process-dark.svg",
+          "alt": {
+            "zh": "实际检查一条人为构造的会话，得到 7 个声明：3 PASS、2 VAGUE、2 LIE。没有执行 Agent、重放 shell 动作或证明代码功能已正确。",
+            "en": "The real check of a deliberately constructed transcript yields seven claims: three PASS, two VAGUE and two LIE. It does not execute an agent, replay shell actions or prove the code works."
+          }
+        }
+      },
+      {
+        "title": {
+          "zh": "工作原理",
+          "en": "How it works"
+        },
+        "body": {
+          "zh": "parser.py 和 codex.py 还原会话及文件前后态，extractor.py 提取声明，verifier.py 比较路径、文本和可用 tree-sitter AST 节点变化，report.py 生成表格或 JSON。默认离线模式不调用模型。",
+          "en": "parser.py and codex.py reconstruct sessions and before/after file states. extractor.py extracts claims; verifier.py compares paths, text and available tree-sitter AST deltas; report.py emits tables or JSON. Default offline mode makes no model calls."
+        },
+        "image": {
+          "light": "/assets/presentation/architecture-light.svg",
+          "dark": "/assets/presentation/architecture-dark.svg",
+          "alt": {
+            "zh": "parser.py 和 codex.py 还原会话及文件前后态，extractor.py 提取声明，verifier.py 比较路径、文本和可用 tree-sitter AST 节点变化，report.py 生成表格或 JSON。默认离线模式不调用模型。",
+            "en": "parser.py and codex.py reconstruct sessions and before/after file states. extractor.py extracts claims; verifier.py compares paths, text and available tree-sitter AST deltas; report.py emits tables or JSON. Default offline mode makes no model calls."
+          }
+        }
+      },
+      {
+        "title": {
+          "zh": "能力与接入",
+          "en": "Capabilities and integration"
+        },
+        "body": {
+          "zh": "检查依赖日志完整性与修改重建。PASS 表示满足所用规则，VAGUE 表示证据不足或声明难以核对，LIE 表示命中反证规则；都应连同 evidence 查看。",
+          "en": "Checks depend on log completeness and edit reconstruction. PASS satisfies the applied rule, VAGUE indicates insufficient or ambiguous evidence, and LIE matches a contradiction rule. Read each with its evidence."
+        },
+        "image": {
+          "light": "/assets/presentation/integrations-light.svg",
+          "dark": "/assets/presentation/integrations-dark.svg",
+          "alt": {
+            "zh": "检查依赖日志完整性与修改重建。PASS 表示满足所用规则，VAGUE 表示证据不足或声明难以核对，LIE 表示命中反证规则；都应连同 evidence 查看。",
+            "en": "Checks depend on log completeness and edit reconstruction. PASS satisfies the applied rule, VAGUE indicates insufficient or ambiguous evidence, and LIE matches a contradiction rule. Read each with its evidence."
+          }
+        }
+      }
+    ],
+    "details": [
+      {
+        "title": {
+          "zh": "标签不是意图判断",
+          "en": "Labels do not determine intent"
+        },
+        "body": {
+          "zh": "LIE 是规则输出名，不能据此断言主观欺骗或功能缺陷已被全面证明。",
+          "en": "LIE is a rule label, not a determination of deception or a complete functional diagnosis."
+        }
+      }
+    ]
   },
-  "footer": { "tag": { "zh": "开源 · Apache 2.0", "en": "Open source · Apache 2.0" } }
+  "demo": {
+    "title": {
+      "zh": "实际运行结果",
+      "en": "Actual demo output"
+    },
+    "note": {
+      "zh": "实际检查一条人为构造的会话，得到 7 个声明：3 PASS、2 VAGUE、2 LIE。没有执行 Agent、重放 shell 动作或证明代码功能已正确。",
+      "en": "The real check of a deliberately constructed transcript yields seven claims: three PASS, two VAGUE and two LIE. It does not execute an agent, replay shell actions or prove the code works."
+    },
+    "source": "https://github.com/SuperMarioYL/agentlie/blob/main/docs/demo-results.json",
+    "steps": [
+      {
+        "label": {
+          "zh": "查看证据表",
+          "en": "Read the evidence table"
+        },
+        "body": {
+          "zh": "对合成 fixture 的 7 条声明运行真实校验。",
+          "en": "Run the actual verifier on seven claims in the synthetic fixture."
+        },
+        "command": "python -m agentlie.cli check tests/fixtures/lying_transcript.jsonl --offline",
+        "output": "╭──────────────────────────────────────── agentlie verdict ────────────────────────────────────────╮\n│ 7 claims  ·  3 PASS  ·  2 VAGUE  ·  2 LIE                                                        │\n╰──────────────────────────────────────────────────────────────────────────────────────────────────╯\n┏━━━━━━━┳━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓\n┃  Turn ┃    ┃ Verb     ┃ Target         ┃ Claim                  ┃ Edits ┃ Evidence               ┃\n┡━━━━━━━╇━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩\n│     1 │ ✓  │ add      │ src/auth.py    │ Added a null check to  │     1 │ 1 new structural       │\n│       │    │          │                │ src/auth.py.           │       │ node(s) in             │\n│       │    │          │                │                        │       │ src/auth.py:           │\n│       │    │          │                │                        │       │ {'return': 1, 'if': 1, │\n│       │    │          │                │                        │       │ 'return_statement': 1, │\n│       │    │          │                │                        │       │ 'is': 1,               │\n│       │    │          │                │                        │       │ 'comparison_operator': │\n│       │    │          │                │                        │       │ 1, ':': 1,             │\n│       │    │          │                │                        │       │ 'identifier': 1,       │\n│       │    │          │                │                        │       │ 'block': 1, 'none': 2, │\n│       │    │          │                │                        │       │ 'if_statement': 1}     │\n│     2 │ ✓  │ add      │ src/util.py    │ Added a logger to      │     1 │ 1 new structural       │\n│       │    │          │                │ src/util.py.           │       │ node(s) in             │\n│       │    │          │                │                        │       │ src/util.py:           │\n│       │    │          │                │                        │       │ {'assignment': 1,      │\n│       │    │          │                │                        │       │ 'import': 1, '.': 1,   │\n│       │    │          │                │                        │       │ 'dotted_name': 1, '(': │\n│       │    │          │                │                        │       │ 1, 'call': 1, ')': 1,  │\n│       │    │          │                │                        │       │ 'import_statement': 1, │\n│       │    │          │                │                        │       │ 'identifier': 5,       │\n│       │    │          │                │                        │       │ 'argument_list': 1,    │\n│       │    │          │                │                        │       │ 'attribute': 1, '=':   │\n│       │    │          │                │                        │       │ 1}                     │\n│     3 │ ✗  │ remove   │ src/auth.py    │ Removed the            │     0 │ claim names            │\n│       │    │          │                │ legacy_token function  │       │ 'src/auth.py' but no   │\n│       │    │          │                │ from src/auth.py.      │       │ Edit/Write touched it  │\n│       │    │          │                │                        │       │ this turn              │\n│     4 │ ✗  │ fix      │ src/rate.py    │ Fixed the rate-limiter │     0 │ claim names            │\n│       │    │          │                │ race condition in      │       │ 'src/rate.py' but no   │\n│       │    │          │                │ src/rate.py.           │       │ Edit/Write touched it  │\n│       │    │          │                │                        │       │ this turn              │\n│     5 │ ~  │ update   │ —              │ Refactored the helper  │     0 │ claim does not name a  │\n│       │    │          │                │ module.                │       │ file or symbol         │\n│     6 │ ✓  │ rename   │ src/handler.ts │ Renamed `oldHandler`   │     1 │ symbol 'oldHandler' -> │\n│       │    │          │                │ to `handleRequest` in  │       │ 'handleRequest' in     │\n│       │    │          │                │ src/handler.ts.        │       │ src/handler.ts (old    │\n│       │    │          │                │                        │       │ gone, new present)     │\n│     7 │ ~  │ update   │ —              │ Updated the README to  │     0 │ claim does not name a  │\n│       │    │          │                │ mention the new        │       │ file or symbol         │\n│       │    │          │                │ logger.                │       │                        │\n└───────┴────┴──────────┴────────────────┴────────────────────────┴───────┴────────────────────────┘\n",
+        "image": "/assets/presentation/demo-0-light.svg",
+        "imageDark": "/assets/presentation/demo-0-dark.svg"
+      },
+      {
+        "label": {
+          "zh": "读取 JSON",
+          "en": "Read JSON"
+        },
+        "body": {
+          "zh": "获取相同判定及其 source 和 evidence。",
+          "en": "Inspect the same verdicts with source and evidence fields."
+        },
+        "command": "python -m agentlie.cli check tests/fixtures/lying_transcript.jsonl --offline --json",
+        "output": "{\n  \"version\": \"0.1\",\n  \"summary\": {\n    \"PASS\": 3,\n    \"LIE\": 2,\n    \"VAGUE\": 2\n  },\n  \"total\": 7,\n  \"pairs\": [\n    {\n      \"turn_id\": 1,\n      \"verdict\": \"PASS\",\n      \"claim\": {\n        \"text\": \"Added a null check to src/auth.py.\",\n        \"verb\": \"add\",\n        \"target_path\": \"src/auth.py\",\n        \"target_symbol\": null\n      },\n      \"edits\": [\n        {\n          \"tool\": \"Edit\",\n          \"path\": \"src/auth.py\",\n          \"source\": \"originalFile\",\n          \"ast_delta\": {\n            \"return\": 1,\n            \"if\": 1,\n            \"return_statement\": 1,\n            \"is\": 1,\n            \"comparison_operator\": 1,\n            \":\": 1,\n            \"identifier\": 1,\n            \"block\": 1,\n            \"none\": 2,\n            \"if_statement\": 1\n          }\n        }\n      ],\n      \"evidence\": [\n        {\n          \"code\": \"ast_add\",\n          \"detail\": \"1 new structural node(s) in src/auth.py: {'return': 1, 'if': 1, 'return_statement': 1, 'is': 1, 'comparison_operator': 1, ':': 1, 'identifier': 1, 'block': 1, 'none': 2, 'if_statement': 1}\"\n        }\n      ]\n    },\n    {\n      \"turn_id\": 2,\n      \"verdict\": \"PASS\",\n      \"claim\": {\n        \"text\": \"Added a logger to src/util.py.\",\n        \"verb\": \"add\",\n        \"target_path\": \"src/util.py\",\n        \"target_symbol\": null\n      },\n      \"edits\": [\n        {\n          \"tool\": \"Write\",\n          \"path\": \"src/util.py\",\n          \"source\": \"originalFile\",\n          \"ast_delta\": {\n            \"assignment\": 1,\n            \"import\": 1,\n            \".\": 1,\n            \"dotted_name\": 1,\n            \"(\": 1,\n            \"call\": 1,\n            \")\": 1,\n            \"import_statement\": 1,\n            \"identifier\": 5,\n            \"argument_list\": 1,\n            \"attribute\": 1,\n            \"=\": 1\n          }\n        }\n      ],\n      \"evidence\": [\n        {\n          \"code\": \"ast_add\",\n          \"detail\": \"1 new structural node(s) in src/util.py: {'assignment': 1, 'import': 1, '.': 1, 'dotted_name': 1, '(': 1, 'call': 1, ')': 1, 'import_statement': 1, 'identifier': 5, 'argument_list': 1, 'attribute': 1, '=': 1}\"\n        }\n      ]\n    },\n    {\n      \"turn_id\": 3,\n      \"verdict\": \"LIE\",\n      \"claim\": {\n        \"text\": \"Removed the legacy_token function from src/auth.py.\",\n        \"verb\": \"remove\",\n        \"target_path\": \"src/auth.py\",\n        \"target_symbol\": null\n      },\n      \"edits\": [],\n      \"evidence\": [\n        {\n          \"code\": \"path_untouched\",\n          \"detail\": \"claim names 'src/auth.py' but no Edit/Write touched it this turn\"\n        }\n      ]\n    },\n    {\n      \"turn_id\": 4,\n      \"verdict\": \"LIE\",\n      \"claim\": {\n        \"text\": \"Fixed the rate-limiter race condition in src/rate.py.\",\n        \"verb\": \"fix\",\n        \"target_path\": \"src/rate.py\",\n        \"target_symbol\": null\n      },\n      \"edits\": [],\n      \"evidence\": [\n        {\n          \"code\": \"path_untouched\",\n          \"detail\": \"claim names 'src/rate.py' but no Edit/Write touched it this turn\"\n        }\n      ]\n    },\n    {\n      \"turn_id\": 5,\n      \"verdict\": \"VAGUE\",\n      \"claim\": {\n        \"text\": \"Refactored the helper module.\",\n        \"verb\": \"update\",\n        \"target_path\": null,\n        \"target_symbol\": null\n      },\n      \"edits\": [],\n      \"evidence\": [\n        {\n          \"code\": \"no_target\",\n          \"detail\": \"claim does not name a file or symbol\"\n        }\n      ]\n    },\n    {\n      \"turn_id\": 6,\n      \"verdict\": \"PASS\",\n      \"claim\": {\n        \"text\": \"Renamed `oldHandler` to `handleRequest` in src/handler.ts.\",\n        \"verb\": \"rename\",\n        \"target_path\": \"src/handler.ts\",\n        \"target_symbol\": \"oldHandler\"\n      },\n      \"edits\": [\n        {\n          \"tool\": \"Edit\",\n          \"path\": \"src/handler.ts\",\n          \"source\": \"originalFile\",\n          \"ast_delta\": {}\n        }\n      ],\n      \"evidence\": [\n        {\n          \"code\": \"symbol_renamed\",\n          \"detail\": \"symbol 'oldHandler' -> 'handleRequest' in src/handler.ts (old gone, new present)\"\n        }\n      ]\n    },\n    {\n      \"turn_id\": 7,\n      \"verdict\": \"VAGUE\",\n      \"claim\": {\n        \"text\": \"Updated the README to mention the new logger.\",\n        \"verb\": \"update\",\n        \"target_path\": null,\n        \"target_symbol\": null\n      },\n      \"edits\": [],\n      \"evidence\": [\n        {\n          \"code\": \"no_target\",\n          \"detail\": \"claim does not name a file or symbol\"\n        }\n      ]\n    }\n  ]\n}\n",
+        "image": "/assets/presentation/demo-1-light.svg",
+        "imageDark": "/assets/presentation/demo-1-dark.svg"
+      }
+    ]
+  },
+  "quickstart": {
+    "title": {
+      "zh": "从完整输入开始",
+      "en": "Start with complete input"
+    },
+    "body": {
+      "zh": "需要 Python 3.10+。安装会获取依赖；下面显式 --offline，只读取随仓库提供的日志。",
+      "en": "Requires Python 3.10+. Installation fetches dependencies; the explicit --offline demo only reads a shipped log."
+    },
+    "steps": [
+      {
+        "title": {
+          "zh": "安装",
+          "en": "Install"
+        },
+        "code": "git clone https://github.com/SuperMarioYL/agentlie.git\ncd agentlie\npython3 -m venv .venv\nsource .venv/bin/activate\npython -m pip install -e ."
+      },
+      {
+        "title": {
+          "zh": "运行自带示例",
+          "en": "Run the supplied example"
+        },
+        "code": "python -m agentlie.cli check tests/fixtures/lying_transcript.jsonl --offline\npython -m agentlie.cli check tests/fixtures/lying_transcript.jsonl --offline --json"
+      }
+    ]
+  },
+  "limitations": [
+    {
+      "zh": "声明抽取、文件重建与 AST 计数都是有限的启发式。",
+      "en": "Claim extraction, file reconstruction and AST counts are bounded heuristics."
+    },
+    {
+      "zh": "PASS 不等于测试通过，LIE 也不等于证明了主观欺骗。",
+      "en": "PASS is not a passing test, and LIE does not prove deliberate deception."
+    },
+    {
+      "zh": "本次未执行可选 LLM 抽取或其他真实会话。",
+      "en": "Optional LLM extraction and other real sessions were not exercised."
+    }
+  ],
+  "footer": {
+    "tag": "0.10.0 · Python 3.10+ · Apache-2.0"
+  }
 }

@@ -1,0 +1,98 @@
+{
+  "name": "agentlie",
+  "tagline": "Check recorded fix claims against recorded edits.",
+  "architecture": {
+    "title": "Session claims and mutations to evidence pairs",
+    "nodes": [
+      {
+        "title": "Session parser",
+        "detail": "Claude Code / Codex logs"
+      },
+      {
+        "title": "File state",
+        "detail": "Original or reconstructed"
+      },
+      {
+        "title": "Claim extractor",
+        "detail": "Verb, path and symbol"
+      },
+      {
+        "title": "Verifier",
+        "detail": "Text + available AST deltas"
+      },
+      {
+        "title": "Report",
+        "detail": "PASS / VAGUE / LIE"
+      }
+    ],
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ]
+    ]
+  },
+  "process": {
+    "title": "Check the deliberately constructed transcript",
+    "steps": [
+      {
+        "title": "Parse fixture",
+        "detail": "Seven extracted claims"
+      },
+      {
+        "title": "Compare edits",
+        "detail": "Rule and AST evidence"
+      },
+      {
+        "title": "Read verdicts",
+        "detail": "3 PASS, 2 VAGUE, 2 LIE"
+      }
+    ],
+    "result": "Seven fixture claims are classified; these labels are not a benchmark of real-world honesty."
+  },
+  "integrations": {
+    "title": "Supported logs and review outputs",
+    "items": [
+      {
+        "title": "Claude Code JSONL",
+        "detail": "Turn and tool records"
+      },
+      {
+        "title": "Codex logs",
+        "detail": "Auto or explicit format"
+      },
+      {
+        "title": "Tree-sitter",
+        "detail": "Available language parsers"
+      },
+      {
+        "title": "Text fallback",
+        "detail": "Non-AST evidence"
+      },
+      {
+        "title": "JSON report",
+        "detail": "Machine-readable pairs"
+      },
+      {
+        "title": "Optional extraction",
+        "detail": "Explicit LLM opt-in"
+      }
+    ]
+  }
+}
