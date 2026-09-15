@@ -40,11 +40,10 @@ from agentlie.models import (
 from agentlie.parser import FileStateTracker
 from agentlie.verifier import verify_pair
 
-
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
-NOOP_EDIT = lambda path="src/app.py": ActualEdit(  # noqa: E731
+NOOP_EDIT = lambda path="src/app.py": ActualEdit(
     tool="Edit", path=path, before_content=None, after_content=""
 )
 # An Edit whose old_string is not found on a path the tracker has never seen

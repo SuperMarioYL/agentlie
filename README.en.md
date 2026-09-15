@@ -9,7 +9,7 @@
 
 **Extract change claims from Claude Code or Codex logs, compare them with recorded file changes, and inspect the evidence.**
 
-`v0.10.0` · `Python 3.10+` · [Apache-2.0](LICENSE)
+`v0.11.0` · `Python 3.10+` · [Apache-2.0](LICENSE)
 
 [Website](https://agentlie.lei6393.com) · [Demo record](docs/demo-results.json)
 

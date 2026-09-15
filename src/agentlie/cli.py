@@ -11,8 +11,7 @@ from rich.console import Console
 from agentlie import __version__
 from agentlie.codex import looks_like_codex, parse_codex_session
 from agentlie.extractor import extract_claims, extract_claims_llm
-from agentlie.models import Turn
-from agentlie.models import Verdict
+from agentlie.models import Turn, Verdict
 from agentlie.parser import FileStateTracker, parse_session
 from agentlie.report import as_json, render_report
 from agentlie.verifier import verify_session

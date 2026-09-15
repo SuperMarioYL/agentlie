@@ -24,6 +24,7 @@ from agentlie.extractor import (
     _sentence_mentions_base,
     extract_claims,
 )
+from agentlie.models import Verdict
 from agentlie.verifier import (
     ADD_INDICATORS,
     LANG_BY_EXT,
@@ -32,7 +33,6 @@ from agentlie.verifier import (
     _try_tree_sitter,
     verify_session,
 )
-from agentlie.models import Verdict
 
 
 # --------------------------------------------------------------------------- #

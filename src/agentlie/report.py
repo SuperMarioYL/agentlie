@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from typing import Iterable
+from collections.abc import Iterable
 
 from rich.console import Console
 from rich.panel import Panel

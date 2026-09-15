@@ -5,6 +5,49 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-16
+
+A correctness-and-hygiene release: CI had been red on every push since the
+v0.10.0 tag (an unpinned `ruff>=0.6` dev dependency floated onto ruff 0.16's
+expanded default ruleset, failing the Lint step with 47 errors), the demo
+workflow had failed on every release tag since v0.1.1, and the v0.9.0 rename
+verifier carried a false-LIE on truthful renames.
+
+### Fixed
+- **CI is green again, and stays deterministic.** The Lint step
+  (`ruff check src tests`) failed with 47 errors on every run since the
+  v0.10.0 tag: the dev dependency `ruff>=0.6` has no upper bound, and ruff
+  0.16 promoted new rules (UP045, BLE001, RUF059, B033, SIM102/103, RUF022,
+  RUF100) into the default lint set. All 47 violations are cleared (PEP 604
+  `X | None` annotations, `collections.abc` imports, sorted imports, the
+  7 deliberate fail-soft `except Exception` paths keep their semantics with
+  explicit `noqa` justifications), and the dev dependency is now pinned to
+  `ruff>=0.6,<0.17` so a future ruleset promotion cannot silently redden CI.
+  A regression test runs `ruff check src tests` from the suite (skipped only
+  when ruff is absent) and another pins the upper bound.
+  (`pyproject.toml`, `src/agentlie/*.py`, `tests/test_*.py`, `uv.lock`,
+  `tests/test_v110.py`)
+- **A truthful rename no longer false-LIEs when the phrase ends the
+  sentence.** RENAME_PATTERN's `(?P<new>[\w.]+)` includes `.` in its
+  character class, so an unbackticked "I renamed old_handler to new_handler."
+  (phrase ending the sentence) captured `new_symbol="new_handler."` — the
+  trailing period was swallowed into the identifier, the verifier's
+  `new_sym in after` check failed, and a TRUTHFUL rename verdicted LIE
+  (symbol_not_renamed). Both captured identifiers are now stripped of the
+  swallowed trailing dot; a side that strips to empty falls back to the
+  existing no-symbols VAGUE path. The backticked phrasing was never affected
+  and still PASSes, and a lying rename (old symbol survives) still LIEs.
+  (`src/agentlie/extractor.py`, `tests/test_v110.py`)
+- **The demo workflow can finally land the rendered gif.** demo.yml triggers
+  on release tags, so actions/checkout leaves the runner on a detached HEAD;
+  the "Commit rendered gif" step then ran a bare `git push`, which exits 128
+  ("You are not currently on a branch.") — the workflow failed on EVERY
+  release tag v0.1.1..v0.10.0 and the README's demo asset never refreshed.
+  The push now targets the default branch explicitly
+  (`git push origin HEAD:main`, a fast-forward at release time), with a
+  static contract test guarding the refspec against regressing to a bare
+  push. (`.github/workflows/demo.yml`, `tests/test_v110.py`)
+
 ## [0.10.0] - 2026-09-02
 
 A release-hygiene release closing a version-drift defect: the v0.9.0 tag was cut

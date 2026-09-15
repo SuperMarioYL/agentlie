@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -19,10 +19,10 @@ class ClaimSpan(BaseModel):
 
     text: str
     verb: str
-    target_path: Optional[str] = None
-    target_symbol: Optional[str] = None
+    target_path: str | None = None
+    target_symbol: str | None = None
     # rename only: the new identifier (target_symbol holds the old name).
-    new_symbol: Optional[str] = None
+    new_symbol: str | None = None
     span_start: int = 0
     span_end: int = 0
 
@@ -37,12 +37,12 @@ class ActualEdit(BaseModel):
 
     tool: str
     path: str
-    old_string: Optional[str] = None
-    new_string: Optional[str] = None
+    old_string: str | None = None
+    new_string: str | None = None
     replace_all: bool = False
-    content: Optional[str] = None
-    before_content: Optional[str] = None
-    after_content: Optional[str] = None
+    content: str | None = None
+    before_content: str | None = None
+    after_content: str | None = None
     ast_delta: dict = Field(default_factory=dict)
     source: str = "replay"
 
@@ -61,10 +61,10 @@ class Turn(BaseModel):
 
     turn_id: int
     uuid: str
-    parent_uuid: Optional[str] = None
+    parent_uuid: str | None = None
     assistant_text: str = ""
     tool_calls: list[ActualEdit] = Field(default_factory=list)
-    timestamp: Optional[str] = None
+    timestamp: str | None = None
 
 
 class ClaimEditPair(BaseModel):

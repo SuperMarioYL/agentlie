@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentlie"
-version = "0.10.0"
+version = "0.11.0"
 description = "Claude Code Agent honesty verifier — one command surfaces fixes the Coding Agent claimed but never made."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -35,7 +35,11 @@ llm = ["anthropic>=0.40,<1"]
 dev = [
   "pytest>=8",
   "pytest-cov>=5",
-  "ruff>=0.6",
+  # Upper-bounded so CI's `ruff check src tests` is deterministic: ruff 0.16
+  # promoted new rules (UP045, BLE001, RUF059, ...) into the default lint set
+  # and reddened every CI run after v0.10.0. Bump the pin consciously and run
+  # the new ruleset locally first.
+  "ruff>=0.6,<0.17",
 ]
 
 [project.scripts]

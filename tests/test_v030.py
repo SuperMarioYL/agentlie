@@ -182,7 +182,7 @@ def test_replace_all_replaces_every_occurrence():
     tracker.seed_original("m.py", "foo()\nfoo()\nfoo()\n")
     edit = ActualEdit(tool="Edit", path="m.py", old_string="foo()",
                       new_string="bar()", replace_all=True)
-    before, after = tracker.apply_edit(edit)
+    _, after = tracker.apply_edit(edit)
     assert after == "bar()\nbar()\nbar()\n", after
     assert "foo()" not in after
 

@@ -27,8 +27,8 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Optional
 
 from agentlie.models import ActualEdit, Turn
 from agentlie.parser import FileStateTracker
@@ -117,7 +117,7 @@ def _assistant_text(ev: dict) -> str:
     return ""
 
 
-def _patch_input(ev: dict) -> Optional[str]:
+def _patch_input(ev: dict) -> str | None:
     """Extract the apply_patch body from a Codex function_call event."""
     if ev.get("type") not in {"function_call", None} and "name" not in ev:
         return None

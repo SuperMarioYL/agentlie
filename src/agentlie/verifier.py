@@ -14,8 +14,6 @@ grounds alone.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from agentlie.models import ActualEdit, ClaimEditPair, Reason, Turn, Verdict
 from agentlie.parser import FileStateTracker
 
@@ -33,7 +31,7 @@ LANG_BY_EXT = {
 }
 
 
-def _lang_for(path: str) -> Optional[str]:
+def _lang_for(path: str) -> str | None:
     for ext, lang in LANG_BY_EXT.items():
         if path.endswith(ext):
             return lang
@@ -44,11 +42,11 @@ def _try_tree_sitter(lang: str):
     """Best-effort tree-sitter loader; returns None if unavailable."""
     try:
         from tree_sitter_language_pack import get_parser  # type: ignore
-    except Exception:
+    except Exception:  # noqa: BLE001 — grammar pack is optional; AST path degrades to string-diff
         return None
     try:
         return get_parser(lang)
-    except Exception:
+    except Exception:  # noqa: BLE001 — unknown/uninstalled grammar degrades to string-diff
         return None
 
 
@@ -58,7 +56,7 @@ def _ast_summary(parser, source: str) -> dict[str, int]:
         return {}
     try:
         tree = parser.parse(source.encode("utf-8"))
-    except Exception:
+    except Exception:  # noqa: BLE001 — a malformed source file must not abort the verdict pass
         return {}
     counts: dict[str, int] = {}
     stack = [tree.root_node]
@@ -107,10 +105,8 @@ ADD_INDICATORS = {
     "use_declaration",
     "mod_item",
     # Java
-    "method_declaration",
     "class_declaration",
     "interface_declaration",
-    "import_declaration",
     "enum_declaration",
     "field_declaration",
     "constructor_declaration",
@@ -236,19 +232,20 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
                         f"symbol {pair.claim.target_symbol!r} present in post-edit content",
                     )
                 )
-        if verb == "remove" and pair.claim.target_symbol:
-            if (
-                pair.claim.target_symbol in (before or "")
-                and pair.claim.target_symbol not in (after or "")
-            ):
-                pair.verdict = Verdict.PASS
-                pair.evidence.append(
-                    _evidence(
-                        "symbol_removed",
-                        f"symbol {pair.claim.target_symbol!r} removed from {edit.path}",
-                    )
+        if (
+            verb == "remove"
+            and pair.claim.target_symbol
+            and pair.claim.target_symbol in (before or "")
+            and pair.claim.target_symbol not in (after or "")
+        ):
+            pair.verdict = Verdict.PASS
+            pair.evidence.append(
+                _evidence(
+                    "symbol_removed",
+                    f"symbol {pair.claim.target_symbol!r} removed from {edit.path}",
                 )
-                return pair
+            )
+            return pair
         if before == after and edit.tool == "Edit":
             pair.evidence.append(
                 _evidence(
@@ -258,7 +255,7 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
             )
 
     # AST evidence (Python / TypeScript only).
-    ast_evidence: Optional[bool] = None
+    ast_evidence: bool | None = None
     # Deferred-downgrade tracking for ast_evidence (see the post-loop resolution
     # below). ``saw_positive`` is True once any matching edit showed a positive
     # signal — a structural ADD/REMOVE_INDICATOR delta OR a normalized real_diff

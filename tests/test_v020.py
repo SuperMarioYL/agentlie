@@ -179,7 +179,7 @@ def test_looks_like_codex_rejects_claude_code(tmp_path):
 
 def test_parse_codex_normalises_into_turns(tmp_path):
     path = _write_codex_log(tmp_path)
-    turns, tracker = parse_codex_session(path)
+    turns, _ = parse_codex_session(path)
     assert len(turns) == 1
     turn = turns[0]
     assert "null check" in turn.assistant_text

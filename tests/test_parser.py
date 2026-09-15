@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from agentlie.parser import FileStateTracker, parse_session
 from agentlie.models import ActualEdit
+from agentlie.parser import FileStateTracker, parse_session
 
 FIXTURE = Path(__file__).parent / "fixtures" / "lying_transcript.jsonl"
 
@@ -33,7 +33,7 @@ def test_parser_groups_tool_use_into_turn():
 
 
 def test_filestate_tracker_uses_originalfile_when_present():
-    turns, tracker = parse_session(FIXTURE)
+    _, tracker = parse_session(FIXTURE)
     # auth.py was seeded from originalFile
     assert "legacy_token" in tracker.get("src/auth.py")
     assert "user is None" in tracker.get("src/auth.py")

@@ -17,8 +17,8 @@ before/after state by:
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Optional
 
 from agentlie.models import ActualEdit, Turn
 
@@ -53,7 +53,7 @@ class FileStateTracker:
         # replayed before, so they must be labeled "replay", not the sticky "originalFile".
         self._origin_values: dict[str, str] = {}
 
-    def get(self, path: str) -> Optional[str]:
+    def get(self, path: str) -> str | None:
         return self._state.get(path)
 
     def seed_original(self, path: str, content: str) -> None:
@@ -63,14 +63,14 @@ class FileStateTracker:
             self._origin_seen.add(path)
             self._origin_values.setdefault(path, content)
 
-    def is_original_before(self, path: str, before: Optional[str]) -> bool:
+    def is_original_before(self, path: str, before: str | None) -> bool:
         """True iff `before` is the seeded originalFile content for `path` (ground
         truth), not a replayed cumulative state. Used to stamp edit.source correctly:
         only the first edit to a seeded path reads the seeded original; subsequent
         edits read replay, so they must not inherit the sticky "originalFile" label."""
         return path in self._origin_values and before is not None and before == self._origin_values[path]
 
-    def apply_edit(self, edit: ActualEdit) -> tuple[Optional[str], Optional[str]]:
+    def apply_edit(self, edit: ActualEdit) -> tuple[str | None, str | None]:
         """Apply an edit; return (before, after) snapshots."""
         before = self._state.get(edit.path)
         if edit.tool == "Write":
@@ -124,15 +124,13 @@ def _is_message_record(rec: dict) -> bool:
     if rec_type in {"user", "assistant"}:
         return True
     msg = rec.get("message") or {}
-    if isinstance(msg, dict) and msg.get("role") in {"user", "assistant"}:
-        return True
-    return False
+    return isinstance(msg, dict) and msg.get("role") in {"user", "assistant"}
 
 
 def _walk_dag(records: list[dict]) -> list[dict]:
     """Sort records by parentUuid chain (depth-first), then by index for ties."""
     by_uuid: dict[str, dict] = {r.get("uuid", f"_{i}"): r for i, r in enumerate(records)}
-    children: dict[Optional[str], list[str]] = {}
+    children: dict[str | None, list[str]] = {}
     for r in records:
         parent = r.get("parentUuid")
         children.setdefault(parent, []).append(r.get("uuid", ""))
@@ -146,7 +144,7 @@ def _walk_dag(records: list[dict]) -> list[dict]:
     # long-session target use case. The explicit stack keeps depth unbounded.
     # Push each node's children in reverse so they pop in their listed order,
     # preserving the original pre-order traversal.
-    stack: list[Optional[str]] = list(reversed(children.get(None, [])))
+    stack: list[str | None] = list(reversed(children.get(None, [])))
     while stack:
         child_uuid = stack.pop()
         if not child_uuid or child_uuid in seen or child_uuid not in by_uuid:

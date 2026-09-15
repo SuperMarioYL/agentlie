@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from agentlie.models import ClaimEditPair, ClaimSpan, Turn, Verdict
 
@@ -129,7 +129,7 @@ def _sentence_mentions_base(sentence: str, base: str) -> bool:
     return re.search(pattern, sentence) is not None
 
 
-def _scan_target_path(sentence: str, candidate_paths: Iterable[str]) -> Optional[str]:
+def _scan_target_path(sentence: str, candidate_paths: Iterable[str]) -> str | None:
     """Find a file path in the sentence, preferring ones the agent actually edited."""
     cand_set = set(candidate_paths)
     # 1. exact mention of one of the edited paths — but only at a real path-token
@@ -153,7 +153,7 @@ def _scan_target_path(sentence: str, candidate_paths: Iterable[str]) -> Optional
     return m.group("path") if m else None
 
 
-def _scan_target_symbol(sentence: str) -> Optional[str]:
+def _scan_target_symbol(sentence: str) -> str | None:
     m = SYMBOL_PATTERN.search(sentence)
     return m.group("sym") if m else None
 
@@ -173,7 +173,7 @@ def extract_claims(turns: list[Turn]) -> list[ClaimEditPair]:
             verb_raw = m.group("verb").lower()
             verb = VERB_SYNONYMS.get(verb_raw, verb_raw)
             target_path = _scan_target_path(sentence, candidate_paths)
-            new_symbol: Optional[str] = None
+            new_symbol: str | None = None
             if verb == "rename":
                 # A rename claim keeps its target_symbol even when a path is also
                 # named — unlike add/remove, which null it out so the path alone
@@ -181,8 +181,16 @@ def extract_claims(turns: list[Turn]) -> list[ClaimEditPair]:
                 # the verifier can confirm the symbol really disappeared/reappeared.
                 rm = RENAME_PATTERN.search(sentence)
                 if rm:
-                    target_symbol = rm.group("old")
-                    new_symbol = rm.group("new")
+                    # `[\w.]+` includes '.' so a sentence-final period is swallowed
+                    # into the captured identifier ("...renamed old to new." ->
+                    # new="new."), and identifiers never legitimately end with a
+                    # dot — strip it, or the verifier's `new_sym in after` check
+                    # false-LIEs a truthful rename (the tool's worst failure mode).
+                    old = rm.group("old").rstrip(".")
+                    new = rm.group("new").rstrip(".")
+                if rm and old and new:
+                    target_symbol = old
+                    new_symbol = new
                 else:
                     target_symbol = _scan_target_symbol(sentence)
             else:
@@ -235,11 +243,11 @@ def _anthropic_client():
         return None
     try:
         import anthropic  # type: ignore
-    except Exception:
+    except Exception:  # noqa: BLE001 — optional dep; --llm-extract degrades to regex
         return None
     try:
         return anthropic.Anthropic()
-    except Exception:
+    except Exception:  # noqa: BLE001 — a bad key/config must degrade, not crash `check`
         return None
 
 
@@ -258,7 +266,7 @@ def _llm_extract_turn(client, turn: Turn) -> list[ClaimSpan]:
         raw = "".join(
             block.text for block in resp.content if getattr(block, "type", None) == "text"
         )
-    except Exception:
+    except Exception:  # noqa: BLE001 — any API/transport failure degrades to rule-based
         return []
     # Tolerate fenced or prose-wrapped JSON.
     match = re.search(r"\{.*\}", raw, re.DOTALL)
@@ -266,7 +274,7 @@ def _llm_extract_turn(client, turn: Turn) -> list[ClaimSpan]:
         return []
     try:
         data = json.loads(match.group(0))
-    except Exception:
+    except Exception:  # noqa: BLE001 — model output is untrusted; parse failure degrades
         return []
     candidate_paths = [e.path for e in turn.tool_calls if e.path]
     spans: list[ClaimSpan] = []
