@@ -5,6 +5,58 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-21
+
+A correctness release closing four defects found by reading the shipped v0.11.0
+source: a false-PASS hole in the add/remove symbol guard, a non-reproducible
+claim-target selection, a lost target for paths that end their sentence, and a
+dead project URL in the package metadata.
+
+### Fixed
+- **A claim that names both a file and a backticked symbol no longer bypasses
+  the add/remove symbol guard.** The extractor discarded the backticked symbol
+  for every non-rename verb whenever the claim also named a file
+  (`target_symbol = ... if not target_path else None`), so the verifier's
+  symbol-level guard — the only trustworthy PASS for a symbol-targeted
+  add/remove, and the contract declared by the v0.3.0 (add) and v0.5.0 (remove)
+  releases — never fired for the commonest phrasing. A lying "I added `foo` to
+  a.py" (foo pre-existed, an unrelated `bar` was added) scored PASS on the
+  symbol-agnostic AST count, and the mirror "I removed `legacy_token` from
+  a.py" (the symbol survived, an unrelated symbol was removed) scored PASS on
+  ast_remove. The symbol now survives alongside the path for add/remove, so both
+  lying cases resolve to VAGUE while a truthful add of a new symbol still PASSes
+  on `symbol_introduced` and a truthful remove still PASSes on `symbol_removed`.
+  (`src/agentlie/extractor.py`, `tests/test_v120.py`)
+- **Claim-target selection is deterministic again.** `_scan_target_path`
+  iterated `set(candidate_paths)`, so a sentence naming more than one edited
+  file resolved to a different target per process — for "I fixed zeta.py and
+  alpha.py and mid.py and beta.py and gamma.py." with all five edited, distinct
+  `PYTHONHASHSEED` values returned beta.py, alpha.py, mid.py, alpha.py, zeta.py,
+  alpha.py. Because the target drives the verdict and the `--fail-on-lie` exit
+  code, the same session was not reproducibly classified, contradicting the
+  extractor's documented offline-deterministic contract. Candidates are now
+  iterated in their recorded order. (`src/agentlie/extractor.py`,
+  `tests/test_v120.py`)
+- **A path that ends its sentence is recognised as an edited-path mention.**
+  `_sentence_mentions_base` excluded `.` from its boundary class, so a
+  sentence-final path never matched the exact-path or basename preference steps.
+  PATH_PATTERN's fallback rescued the extensions it lists, but a file whose
+  extension it omits lost its target entirely: "I fixed the stub in
+  types.pyi." verdicted VAGUE(no_target) even though the named file was the one
+  edited. A period not followed by a word character (or ending the string) is
+  now a valid boundary, mirroring PATH_PATTERN's own `(?!\w|\.\w)` guard, so
+  `types.pyi` resolves and PASSes and the `.sh`/`.c`/`.css` claims are at least
+  attributed to their file; `utils.py` still cannot match `utils.pyc`, and
+  `config.py` still cannot match inside `reconfig.python`.
+  (`src/agentlie/extractor.py`, `tests/test_v120.py`)
+- **The package's project URLs point at the real repository.** `[project.urls]`
+  advertised `https://github.com/supermario-leo/agentlie` (HTTP 404) for
+  Homepage, Repository and Issues, so every published wheel and sdist carried
+  three dead links; the canonical repository is
+  `https://github.com/SuperMarioYL/agentlie` (HTTP 200). A lockstep test pins
+  the URLs to the published repository so the stale owner cannot return.
+  (`pyproject.toml`, `tests/test_v120.py`)
+
 ## [0.11.0] - 2026-09-16
 
 A correctness-and-hygiene release: CI had been red on every push since the

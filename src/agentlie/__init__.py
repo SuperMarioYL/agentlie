@@ -18,7 +18,7 @@ from agentlie.parser import FileStateTracker, parse_session
 from agentlie.report import render_report
 from agentlie.verifier import verify_pair, verify_session
 
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 __all__ = [
     "ActualEdit",

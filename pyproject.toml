@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentlie"
-version = "0.11.0"
+version = "0.12.0"
 description = "Claude Code Agent honesty verifier — one command surfaces fixes the Coding Agent claimed but never made."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -46,9 +46,9 @@ dev = [
 agentlie = "agentlie.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/supermario-leo/agentlie"
-Repository = "https://github.com/supermario-leo/agentlie"
-Issues = "https://github.com/supermario-leo/agentlie/issues"
+Homepage = "https://github.com/SuperMarioYL/agentlie"
+Repository = "https://github.com/SuperMarioYL/agentlie"
+Issues = "https://github.com/SuperMarioYL/agentlie/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentlie"]

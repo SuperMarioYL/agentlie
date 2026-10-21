@@ -125,26 +125,33 @@ def _sentence_mentions_base(sentence: str, base: str) -> bool:
     leading ``/`` is fine (a real path segment boundary).
     """
     boundary = r"[^\w./\\-]"
-    pattern = rf"(?:^|{boundary}|/)" + re.escape(base) + rf"(?={boundary}|$)"
+    # A trailing "." that is not followed by a word char is a sentence/segment
+    # boundary, so a path that ends its sentence ("... in src/auth.py.") is still
+    # recognised as a mention. Without it the two edited-path preference steps
+    # below never match a sentence-final path, and a claim about a file whose
+    # extension is outside PATH_PATTERN loses its target entirely. A dot followed
+    # by a word char stays excluded, so `utils.py` still cannot match `utils.pyc`.
+    pattern = rf"(?:^|{boundary}|/)" + re.escape(base) + rf"(?={boundary}|\.(?!\w)|$)"
     return re.search(pattern, sentence) is not None
 
 
 def _scan_target_path(sentence: str, candidate_paths: Iterable[str]) -> str | None:
     """Find a file path in the sentence, preferring ones the agent actually edited."""
-    cand_set = set(candidate_paths)
+    # Iterate the candidates in their recorded order, never over a set: the chosen
+    # target drives the verdict (and the --fail-on-lie exit code), so a set's hash
+    # order made one sentence classify differently per process (PYTHONHASHSEED).
+    ordered = list(dict.fromkeys(p for p in candidate_paths if p))
     # 1. exact mention of one of the edited paths — but only at a real path-token
     #    boundary, so a bare-basename candidate like ``config.py`` can't match inside
     #    the unrelated word ``reconfig.python`` (a plain ``path in sentence`` substring
     #    test is not path-segment-safe; the tail of a full path like ``src/utils.py``
     #    still matches because its flanking chars are boundaries).
-    for path in cand_set:
-        if path and _sentence_mentions_base(sentence, path):
+    for path in ordered:
+        if _sentence_mentions_base(sentence, path):
             return path
     # 2. tail-of-path mention (basename match) — same boundary discipline, so
     #    ``utils.py`` can't match ``test_utils.py``.
-    for path in cand_set:
-        if not path:
-            continue
+    for path in ordered:
         base = path.rsplit("/", 1)[-1]
         if base and base != path and _sentence_mentions_base(sentence, base):
             return path
@@ -193,7 +200,17 @@ def extract_claims(turns: list[Turn]) -> list[ClaimEditPair]:
                     new_symbol = new
                 else:
                     target_symbol = _scan_target_symbol(sentence)
+            elif verb in {"add", "remove"}:
+                # Keep the backticked symbol even when the claim also names a path.
+                # Nulling it here (the pre-v0.12.0 behaviour) silently disabled the
+                # verifier's symbol-level guard (verifier.py:410 — the v0.3.0 add /
+                # v0.5.0 remove contracts) for the commonest phrasing, so a lying
+                # "I added `foo` to a.py" (foo pre-existed, an unrelated symbol
+                # added) false-PASSed on the symbol-agnostic AST count.
+                target_symbol = _scan_target_symbol(sentence)
             else:
+                # update (and any future soft verb): intentionally vague — the path
+                # alone carries the verdict, so a symbol is not needed.
                 target_symbol = _scan_target_symbol(sentence) if not target_path else None
             claim = ClaimSpan(
                 text=sentence,
