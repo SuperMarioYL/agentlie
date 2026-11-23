@@ -387,6 +387,18 @@ def verify_pair(pair: ClaimEditPair, tracker: FileStateTracker) -> ClaimEditPair
     if ast_evidence is None and ts_ran and not saw_positive:
         ast_evidence = False
 
+    # Nothing was measured: the claim named no path (a path with no match returned
+    # LIE above) and the turn recorded no Edit/Write at all. Keep VAGUE — a file
+    # mutated through Bash is invisible to this tool — but say so, instead of
+    # rendering an empty Evidence cell that explains nothing.
+    if not matches:
+        pair.evidence.append(
+            _evidence(
+                "no_matching_edits",
+                "the turn recorded no Edit/Write to check this claim against",
+            )
+        )
+
     # Resolve verdict.
     if verb == "update":
         # Update is intentionally soft; presence of a real edit → PASS.

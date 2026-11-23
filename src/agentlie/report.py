@@ -83,9 +83,12 @@ def render_report(
 
 def as_json(pairs: list[ClaimEditPair]) -> str:
     """Stable JSON dump for CI / scripting."""
+    counts = summary(pairs)
     payload = {
         "version": "0.1",
-        "summary": {v.value: c for v, c in summary(pairs).items()},
+        # Every verdict key is always present (default 0): a consumer reading
+        # summary["LIE"] must not KeyError on a session that has no lies.
+        "summary": {v.value: counts.get(v, 0) for v in Verdict},
         "total": len(pairs),
         "pairs": [
             {

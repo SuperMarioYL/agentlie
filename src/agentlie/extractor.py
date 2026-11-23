@@ -80,7 +80,19 @@ PATH_PATTERN = re.compile(
     r"`?(?P<path>(?:[./~]?[\w./-]+/)*[\w.-]+\.(?:py|ts|tsx|js|jsx|go|rs|java|rb|md|yml|yaml|json|toml))(?!\w|\.\w)`?"
 )
 
-SYMBOL_PATTERN = re.compile(r"`(?P<sym>[A-Za-z_][\w.]*)`")
+SYMBOL_PATTERN = re.compile(
+    r"`(?P<sym>[A-Za-z_][\w.]*)(?:\([^`]*\)|\[[^`]*\])?`"
+)
+
+# A backticked token that ends in a source-file extension is a PATH target, not a
+# symbol: `utils.py` in "I added validation to `utils.py`" names the file the claim
+# is about. The verifier treats any non-None target_symbol as an assertion it must
+# satisfy at symbol level (ast_pass=False for symbol add/remove), so letting a
+# file name through degraded a genuine, AST-confirmed add to VAGUE.
+_PATH_EXT_RE = re.compile(
+    r"\.(?:py|pyi|ts|tsx|js|jsx|go|rs|java|rb|md|yml|yaml|json|toml|sh|cfg|ini|txt|css|html)$",
+    re.IGNORECASE,
+)
 
 # Capture "renamed `old` to `new`" phrasing so a rename claim carries BOTH
 # identifiers. The verifier needs the old name (did it disappear?) and the new
@@ -93,6 +105,29 @@ RENAME_PATTERN = re.compile(
 
 # A "claim sentence" is roughly a sentence containing a recognised verb.
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?。！？])\s+|\n+")
+
+# A sentence may name a change the agent did NOT make: "I did not modify a.py",
+# "I didn't fix a.py", "I never added the flag", "unable to update a.py". The verb
+# pattern matches the verb regardless, so without this guard a truthful denial
+# becomes a positive claim and the verifier's path_untouched rule reports a false
+# LIE — plus a non-zero --fail-on-lie exit code for an honest session.
+NEGATION_CUE = re.compile(
+    r"n't\b|\bnot\b|\bnever\b|\bno longer\b|\bfailed to\b|\bunable to\b",
+    re.IGNORECASE,
+)
+
+# Clauses whose tail is inspected for a negation cue. Clause-local so
+# "I did not modify A but I fixed B" keeps the fix claim about B.
+CLAUSE_BREAK = re.compile(
+    r"[,;:]|\b(?:but|then|so|however|although|though)\b", re.IGNORECASE
+)
+
+
+def _is_negated(sentence: str, verb_start: int) -> bool:
+    """True when the verb is negated within its own clause."""
+    prefix = sentence[:verb_start]
+    clause = CLAUSE_BREAK.split(prefix)[-1]
+    return NEGATION_CUE.search(clause) is not None
 
 
 def _split_sentences(text: str) -> list[tuple[str, int, int]]:
@@ -161,8 +196,19 @@ def _scan_target_path(sentence: str, candidate_paths: Iterable[str]) -> str | No
 
 
 def _scan_target_symbol(sentence: str) -> str | None:
-    m = SYMBOL_PATTERN.search(sentence)
-    return m.group("sym") if m else None
+    """First backticked symbol in the sentence, ignoring backticked file names.
+
+    The call/index suffix (``foo()``, ``foo(a, b)``, ``Cls.method(x)``, ``foo[T]``)
+    is part of SYMBOL_PATTERN so the commonest spelling keeps its symbol — dropping
+    it silently re-opened the v0.12.0 add/remove symbol-guard bypass.
+    """
+    for match in SYMBOL_PATTERN.finditer(sentence):
+        sym = match.group("sym")
+        if "/" in sym or _PATH_EXT_RE.search(sym):
+            # A backticked path is the claim's file target, never its symbol.
+            continue
+        return sym
+    return None
 
 
 def extract_claims(turns: list[Turn]) -> list[ClaimEditPair]:
@@ -174,8 +220,18 @@ def extract_claims(turns: list[Turn]) -> list[ClaimEditPair]:
             continue
         candidate_paths = [e.path for e in turn.tool_calls if e.path]
         for sentence, _, _ in _split_sentences(text):
-            m = VERB_PATTERN.search(sentence)
-            if not m:
+            # First NON-negated verb: a denial earlier in the sentence must not
+            # hide a real claim in a later clause ("I did not modify A but I
+            # fixed B" still yields the fix claim about B).
+            m = next(
+                (
+                    candidate
+                    for candidate in VERB_PATTERN.finditer(sentence)
+                    if not _is_negated(sentence, candidate.start())
+                ),
+                None,
+            )
+            if m is None:
                 continue
             verb_raw = m.group("verb").lower()
             verb = VERB_SYNONYMS.get(verb_raw, verb_raw)

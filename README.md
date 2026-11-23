@@ -9,7 +9,7 @@
 
 **从 Claude Code 或 Codex 日志提取修改声明，与记录中的文件变化对照并展示证据。**
 
-`v0.12.0` · `Python 3.10+` · [Apache-2.0](LICENSE)
+`v0.13.0` · `Python 3.10+` · [Apache-2.0](LICENSE)
 
 [Website](https://agentlie.lei6393.com) · [Demo record](docs/demo-results.json)
 
@@ -131,8 +131,8 @@ $ python -m agentlie.cli check tests/fixtures/lying_transcript.jsonl --offline -
   "version": "0.1",
   "summary": {
     "PASS": 3,
-    "LIE": 2,
-    "VAGUE": 2
+    "VAGUE": 2,
+    "LIE": 2
   },
   "total": 7,
   "pairs": [

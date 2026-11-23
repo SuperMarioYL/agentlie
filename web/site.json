@@ -10,7 +10,7 @@
   },
   "meta": {
     "visual_profile": "neon-particle",
-    "content_version": "0.12.0",
+    "content_version": "0.13.0",
     "demo_source": "docs/demo-results.json"
   },
   "hero": {
@@ -84,8 +84,8 @@
         "en": "Connect the summary to the edits"
       },
       "body": {
-        "zh": "会话结束时的自然语言总结可能与工具日志不一致。agentlie 把 fix、add、remove、rename、update 声明关联到目标路径及当轮修改，用规则给出 PASS、VAGUE 或 LIE 标签和证据，帮助人工复查。标签不是对 Agent 主观意图的判断。",
-        "en": "A session summary can disagree with its tool log. agentlie connects fix, add, remove, rename and update claims to target paths and recorded edits, then reports PASS, VAGUE or LIE with rule-based evidence for review. These labels do not determine an agent’s intent."
+        "zh": "会话结束时的自然语言总结可能与工具日志不一致。agentlie 把 fix、add、remove、rename、update 声明关联到目标路径及当轮修改，用规则给出 PASS、VAGUE 或 LIE 标签和证据，帮助人工复查；否定陈述（如“未修改”）不计入声明，非 PASS 结果均附带原因。标签不是对 Agent 主观意图的判断。",
+        "en": "A session summary can disagree with its tool log. agentlie connects fix, add, remove, rename and update claims to target paths and recorded edits, then reports PASS, VAGUE or LIE with rule-based evidence for review. Negated statements such as “I did not modify” are not counted as claims, and every non-PASS verdict carries its reason. These labels do not determine an agent’s intent."
       }
     },
     "sections": [
@@ -251,7 +251,7 @@
     }
   ],
   "footer": {
-    "tag": "0.12.0 · Python 3.10+ · Apache-2.0"
+    "tag": "0.13.0 · Python 3.10+ · Apache-2.0"
   },
-  "content_version": "0.12.0"
+  "content_version": "0.13.0"
 }

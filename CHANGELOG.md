@@ -5,6 +5,66 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-24
+
+A claim-extraction correctness release. Four defects reproduced against the
+shipped v0.12.0 source are closed: two false verdicts caused by how a claim's
+verb and symbol tokens are read, a verdict row that explained nothing, and a
+`--json` summary whose key set depended on the data.
+
+### Fixed
+- **A backticked call form keeps its symbol, and a backticked file name is no
+  longer taken for one.** `SYMBOL_PATTERN` required a bare identifier between
+  backticks, so `` `foo()` `` (and `` `foo(a, b)` ``, `` `Cls.method(x)` ``)
+  produced no symbol at all. For "I added `foo()` to a.py." where `foo` already
+  existed and an unrelated `bar` was added, the claim therefore PASSed on the
+  symbol-agnostic AST count — reopening the exact false-PASS hole v0.12.0
+  closed, since the add/remove symbol guard only applies when a symbol was
+  captured. The mirror case was worse in the other direction: a backticked file
+  name (`` `utils.py` ``) WAS accepted as the symbol, and the verifier forces
+  `ast_pass = False` for symbol-targeted add/remove claims, so a genuine,
+  AST-confirmed add verdicted VAGUE. Call/index suffixes are now part of the
+  symbol pattern and path-shaped tokens are skipped, so `` `foo()` `` yields
+  `foo` (guard restored), `` `utils.py` `` yields no symbol (the path carries
+  the verdict and the add PASSes), and "I added `helper()`" of a new symbol
+  still PASSes on `symbol_introduced`. (`src/agentlie/extractor.py`,
+  `tests/test_v130.py`)
+- **Negated change statements are no longer extracted as claims.** The
+  extractor took the first recognised verb in a sentence without looking at what
+  preceded it, so "I did not modify src/app.py." and "I didn't fix src/app.py."
+  became ordinary update/fix claims; with no edit to that file the verifier
+  reported LIE (`path_untouched`) and `--fail-on-lie` exited 1 on an honest
+  session — a false accusation, the worst failure mode for a tool that only
+  claims to detect contradiction. A clause-local negation guard now skips
+  denials (`not`, `n't`, `never`, `no longer`, `failed to`, `unable to`) while a
+  real claim in a later clause survives: "I did not modify src/app.py but I
+  fixed src/other.py." still extracts and verifies the fix.
+  (`src/agentlie/extractor.py`, `tests/test_v130.py`)
+- **A claim that could not be measured now says so.** A symbol-only claim in a
+  turn with no `Edit`/`Write` ("I added `helper` to the module.") resolved VAGUE
+  with an empty evidence list, so both the terminal report and `--json` showed
+  nothing under Evidence. One explicit reason (`no_matching_edits`) is now
+  attached. The verdict stays VAGUE — a file mutated through Bash is invisible
+  to this tool, so there is no ground truth to accuse anyone with.
+  (`src/agentlie/verifier.py`, `tests/test_v130.py`)
+- **The `--json` summary always carries all three verdict keys.** It was built
+  from a `Counter`, so a session with no lies serialised
+  `"summary": {"PASS": 1}` and a consumer reading `summary["LIE"]` raised
+  `KeyError` on exactly the clean runs. `PASS`, `VAGUE` and `LIE` are now always
+  emitted, defaulting to 0; the shipped demo payload is unchanged in content.
+  (`src/agentlie/report.py`, `tests/test_v130.py`)
+
+### Changed
+- Version surfaces moved in lockstep to 0.13.0 (`pyproject.toml`,
+  `src/agentlie/__init__.py`, both README headers, `web/site.json`), and
+  `tests/test_v130.py::test_version_lockstep` now pins them together.
+- `uv.lock` records the `ruff>=0.6,<0.17` pin that `pyproject.toml` has carried
+  since v0.11.0; the lock had kept the unbounded specifier.
+- Claim extraction now skips denials and symbol tokens are normalised, so a
+  session written entirely in Chinese still yields no claims: the recognised
+  verbs remain the English fix/add/remove/rename/update set documented in the
+  README.
+
 ## [0.12.0] - 2026-10-21
 
 A correctness release closing four defects found by reading the shipped v0.11.0
